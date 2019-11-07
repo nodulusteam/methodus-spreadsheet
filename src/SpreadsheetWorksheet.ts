@@ -82,9 +82,15 @@ export class SpreadsheetWorksheet {
     async getCells(opts?: any) {
         return await this.spreadsheet.getCells(this.id, opts);
     }
-    async addRow(data: any) {
-        return await this.spreadsheet.addRow(this.id, data);
+
+    async updateRow( index: number ,data: any, headerRow: any[]) {
+        return await this.spreadsheet.updateRow(this.data.sheetId, data, headerRow, index);
     }
+
+    async addRow(data: any, headerRow: any[]) {
+        return await this.spreadsheet.addRow(this.data.sheetId, data, headerRow);
+    }
+
     async bulkUpdateCells(cells: any) {
 
         var entries = cells.map((cell: any, i: number) => {

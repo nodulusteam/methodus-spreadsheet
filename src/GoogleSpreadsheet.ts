@@ -9,7 +9,8 @@ import { forceArray, xmlSafeColumnName, xmlSafeValue } from './functions';
 import { SpreadsheetCell } from './SpreadsheetCell';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import v1 from 'uuid/v1';
-
+import { EventEmitter } from 'events';
+const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Z'];
 
 ///12Wmxa8_scZ-np2rKs7lbWjyyIBdSRNMikwUGx_ZC_pY/values/A1%3AI1000
 
@@ -21,7 +22,7 @@ var REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
 
 // The main class that represents a single sheet
 // this is the main module.exports
-export class GoogleSpreadsheet {
+export class GoogleSpreadsheet extends EventEmitter {
     google_auth: any;
     visibility = 'public';
     projection = 'values';
@@ -40,7 +41,7 @@ export class GoogleSpreadsheet {
      *
      */
     constructor(ss_key: string, auth_id?: string, options?: any) {
-
+        super();
         this.ss_key = ss_key;
 
         this.auth_client = new GoogleAuth();
@@ -151,28 +152,32 @@ export class GoogleSpreadsheet {
 
         if (method == 'PUT' || method == 'POST' && url.indexOf('/batch') != -1) {
             headers['If-Match'] = '*';// v1();//'*';
-            var query = "?valueInputOption=USER_ENTERED";
-            url += query;
+            // var query = "?valueInputOption=USER_ENTERED";
+            // url += query;
 
         }
 
         if (method == 'GET' && query_or_data) {
             var query = "?" + querystring.stringify(query_or_data);
-            // replacements are needed for using structured queries on getRows
+            // replacements are needed for using     structured queries on getRows
             query = query.replace(/%3E/g, '>');
             query = query.replace(/%3D/g, '=');
             query = query.replace(/%3C/g, '<');
             url += query;
         }
-
+        console.warn(url);
         try {
+            let bufferBody;
+            if (query_or_data && Object.keys(query_or_data).length) {
+                bufferBody = Buffer.from(JSON.stringify(query_or_data));
+            }
             const response = await request({
                 resolveWithFullResponse: true,
                 url: url,
                 method: method,
                 headers: headers,
                 gzip: this.options.gzip !== undefined ? this.options.gzip : true,
-                body: method == 'POST' || method == 'PUT' ? query_or_data : null
+                body: method == 'POST' || method == 'PUT' ? bufferBody : null
             });
             const body: any = response.body;
             if (body) {
@@ -226,7 +231,6 @@ export class GoogleSpreadsheet {
             return ss_data;
 
         } catch (error) {
-            debugger;
             throw error;
         }
 
@@ -290,9 +294,10 @@ export class GoogleSpreadsheet {
         const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_id}!A1:Z1`], 'GET', {});
         const data = response.result;
         const entries = response.body.values;
-        return new SpreadsheetRow(this, entries[0]);
+        return new SpreadsheetRow(this, entries[0], 0);
     }
 
+    map: any = {};
 
     async getRows(worksheet_id: string, opts: any) {
         // the first row is used as titles/keys and is not included
@@ -307,43 +312,20 @@ export class GoogleSpreadsheet {
         // if (opts.orderby) query["orderby"] = opts.orderby;
         // if (opts.reverse) query["reverse"] = 'true';
 
-        // if (opts.query) {
-        //     //create a filter for the query
-        //     const filterREquest = {
-        //         "requests": [
-        //             {
-        //                 "filter": {
-        //                     {
-        //                 "criteria": {
-        //                     string: {
-        //                         object(FilterCriteria)
-        //                     },
-
-        //                 }
-
-        //             }
-
-
-        //         ],
-        //         "includeSpreadsheetInResponse": true,
-        //         "responseIncludeGridData": true
-        //     }
-        //     const response: any = await this.makeFeedRequest([this.ss_key, 'batchUpdate'], 'POST', query);
         // }
         // if (opts.query) query['sq'] = opts.query;
-
+        const map: any = {};
         const rows: any = [];
         try {
             const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_id}!A1:Z2000`], 'GET', query);
-            console.error('Captured response at getRows ', response);
             const data = response.result;
             const entries = response.body.values;
             const objectTemplate: any = {};
-            entries[0].forEach((key: string) => {
+            entries[0].forEach((key: string, index: number) => {
+                map[COLUMNS[index]] = key;
                 objectTemplate[key] = null;
             });
-            //, (err: Error, data: any, xml: any) => {
-            //   if (err) return cb(err);
+
             if (data === true) {
                 throw (new Error('No response to getRows call'))
             }
@@ -353,7 +335,7 @@ export class GoogleSpreadsheet {
                     entries[0].forEach((key: string, index: number) => {
                         clone[key] = row_data[index];
                     });
-                    rows.push(new SpreadsheetRow(this, clone));
+                    rows.push(new SpreadsheetRow(this, clone, rowIndex));
                 }
             });
         } catch (error) {
@@ -364,26 +346,146 @@ export class GoogleSpreadsheet {
         return rows;
     }
 
-    async addRow(worksheet_id: string, data: any) {
-        var data_xml = '<entry xmlns="http://www.w3.org/2005/Atom" xmlns:gsx="http://schemas.google.com/spreadsheets/2006/extended">' + "\n";
-        Object.keys(data).forEach(function (key) {
-            if (key != 'id' && key != 'title' && key != 'content' && key != '_links') {
-                data_xml += '<gsx:' + xmlSafeColumnName(key) + '>' + xmlSafeValue(data[key]) +
-                    '</gsx:' + xmlSafeColumnName(key) + '>' + "\n"
-            }
-        });
-        data_xml += '</entry>';
+    async addRow(worksheet_id: string, data: any, headerRow: string[]) {
+        // validate the header row of the sheet / get the values
+
+
+        //set the order of the values with the order of the columns
+
+        const request = {
+            "requests": [
+                {
+                    "updateCells": {
+                        "range": {
+
+                            "sheetId": worksheet_id,
+                            "startRowIndex": 0,
+                            "endRowIndex": 1,
+                            "startColumnIndex": 0,
+                            "endColumnIndex": 1000
+
+                        },
+                        "rows": [{
+                            "values": headerRow.map((header) => {
+                                return {
+                                    "userEnteredValue": {
+                                        "stringValue": header
+                                    }
+                                }
+                            })
+                        }],
+                        "fields": "userEnteredValue"
+                    },
+                }
+                ,
+                {
+                    "appendCells": {
+                        "sheetId": worksheet_id,
+                        "rows": [{
+                            "values": headerRow.map((field: string) => {
+                                return {
+                                    "userEnteredValue": {
+                                        "stringValue": data[field]
+                                    }
+                                }
+                            })
+                        }],
+                        "fields": "userEnteredValue"
+                    },
+                }
+            ],
+            "includeSpreadsheetInResponse": false,
+            "responseIncludeGridData": false
+        }
         try {
-            const result: any = await this.makeFeedRequest(["list", this.ss_key, worksheet_id], 'POST', data_xml)
-            const new_xml = result.body;
-            const entries_xml = new_xml.match(/<entry[^>]*>([\s\S]*?)<\/entry>/g);
-            const row = new SpreadsheetRow(this, data);
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            this.emit('insert', { sheetId: worksheet_id });
+
+
+            const result: any = response;
+
+            const row = new SpreadsheetRow(this, data, 0);
             return row;
         } catch (error) {
             console.error('Capured error at addRow', error);
             throw (new Error(error));
         }
     }
+
+
+    async updateRow(worksheet_id: string, data: any, headerRow: string[], index: number) {
+        // validate the header row of the sheet / get the values
+
+        //set the order of the values with the order of the columns
+
+        const request = {
+            "requests": [
+                {
+                    "updateCells": {
+                        "range": {
+
+                            "sheetId": worksheet_id,
+                            "startRowIndex": 0,
+                            "endRowIndex": 1,
+                            "startColumnIndex": 0,
+                            "endColumnIndex": 1000
+
+                        },
+                        "rows": [{
+                            "values": headerRow.map((header) => {
+                                return {
+                                    "userEnteredValue": {
+                                        "stringValue": header
+                                    }
+                                }
+                            })
+                        }],
+                        "fields": "userEnteredValue"
+                    },
+                }
+                ,
+                {
+                    "updateCells": {
+                        "range": {
+
+                            "sheetId": worksheet_id,
+                            "startRowIndex": index,
+                            "endRowIndex": index + 1,
+                            "startColumnIndex": 0,
+                            "endColumnIndex": 1000
+
+                        },
+                        "rows": [{
+                            "values": headerRow.map((field: string) => {
+                                return {
+                                    "userEnteredValue": {
+                                        "stringValue": data[field]
+                                    }
+                                }
+                            })
+                        }],
+                        "fields": "userEnteredValue"
+                    },
+                }
+            ],
+            "includeSpreadsheetInResponse": false,
+            "responseIncludeGridData": false
+        }
+        try {
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            this.emit('insert', { sheetId: worksheet_id });
+
+
+            const result: any = response;
+
+            const row = new SpreadsheetRow(this, data, 0);
+            return row;
+        } catch (error) {
+            console.error('Capured error at addRow', error);
+            throw (new Error(error));
+        }
+    }
+
 
     async getCells(worksheet_id: string, opts: any) {
 

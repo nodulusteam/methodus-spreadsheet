@@ -1,15 +1,23 @@
 import { xmlSafeColumnName, forceArray, xmlSafeValue } from "./functions";
 let RowSpreadsheet: any = null;
+
+
 export class SpreadsheetRow {
     data: any;
-    _links: any
-
+    _links: any;
+    map: any = {};
+    index: number;
     /**
      *
      */
-    constructor(spreadsheet: any, data: any) {
+    constructor(spreadsheet: any, data: any, rowIndex: number) {
         RowSpreadsheet = spreadsheet;
         this.data = data;
+        this.index = rowIndex;
+        // Object.keys(data).forEach((key, index) => {
+        //     this.map[COLUMNS[index]] = key;
+        // });
+
         //this._xml = xml;
         // const self: any = this as any;
         // Object.keys(data).forEach((key) => {
@@ -44,22 +52,8 @@ export class SpreadsheetRow {
 
 
 
-    save(cb: any) {
-        /*
-        API for edits is very strict with the XML it accepts
-        So we just do a find replace on the original XML.
-        It's dumb, but I couldnt get any JSON->XML conversion to work reliably
-        */
-
-        var data_xml ='';// this['_xml'];
-        // probably should make this part more robust?
-        data_xml = data_xml.replace('<entry>', "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:gsx='http://schemas.google.com/spreadsheets/2006/extended'>");
-        Object.keys(self).forEach((key) => {
-            if (key.substr(0, 1) != '_' && typeof ((this as any)[key] == 'string')) {
-                data_xml = data_xml.replace(new RegExp('<gsx:' + xmlSafeColumnName(key) + ">([\\s\\S]*?)</gsx:" + xmlSafeColumnName(key) + '>'), '<gsx:' + xmlSafeColumnName(key) + '>' + xmlSafeValue((this as any)[key]) + '</gsx:' + xmlSafeColumnName(key) + '>');
-            }
-        });
-        RowSpreadsheet.makeFeedRequest(this['_links']['edit'], 'PUT', data_xml, cb);
+    async save(headerRow: any) {
+        await RowSpreadsheet.updateRow(this.data, headerRow, this.index);
     }
     del(cb: any) {
         RowSpreadsheet.makeFeedRequest(this['_links']['edit'], 'DELETE', null, cb);

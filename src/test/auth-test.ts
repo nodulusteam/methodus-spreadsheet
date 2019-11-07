@@ -22,7 +22,6 @@ Object.values(docs).forEach(async (doc: any) => {
 (() => {
   return docs['private'].getInfo().catch((err: Error) => {
     console.error(err);
-    debugger;
   }).then((data: any) => {
     console.error(data);
 

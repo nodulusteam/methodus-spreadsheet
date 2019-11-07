@@ -171,16 +171,7 @@ export class SpreadsheetCell {
 
 
   async save() {
-    this._needsSave = false;
-    var data_xml =
-      '<entry><id>' + this.getId() + '</id>' +
-      '<link rel="edit" type="application/atom+xml" href="' + this.getId() + '"/>' +
-      '<gs:cell row="' + this.row + '" col="' + this.col + '" inputValue="' + this.valueForSave + '"/></entry>'
-
-    data_xml = data_xml.replace('<entry>', "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:gs='http://schemas.google.com/spreadsheets/2006'>");
-    const response = await this.spreadsheet.makeFeedRequest(this.getEdit(), 'PUT', data_xml);
-    this.updateValuesFromResponseData(response);
-    return response;
+    
   }
 
   async del() {
