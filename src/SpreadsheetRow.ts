@@ -7,11 +7,13 @@ export class SpreadsheetRow {
     _links: any;
     map: any = {};
     index: number;
+    sheetId: number;
     /**
      *
      */
-    constructor(spreadsheet: any, data: any, rowIndex: number) {
+    constructor(spreadsheet: any, data: any, sheetId: number, rowIndex: number) {
         RowSpreadsheet = spreadsheet;
+        this.sheetId = sheetId;
         this.data = data;
         this.index = rowIndex;
         // Object.keys(data).forEach((key, index) => {
@@ -50,12 +52,11 @@ export class SpreadsheetRow {
     }
 
 
-
-
     async save(headerRow: any) {
         await RowSpreadsheet.updateRow(this.data, headerRow, this.index);
     }
-    del(cb: any) {
-        RowSpreadsheet.makeFeedRequest(this['_links']['edit'], 'DELETE', null, cb);
+    async del() {
+        
+        await RowSpreadsheet.removeRow(this.sheetId, this.index);
     }
 }

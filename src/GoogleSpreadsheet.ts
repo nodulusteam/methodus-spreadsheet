@@ -280,26 +280,26 @@ export class GoogleSpreadsheet extends EventEmitter {
         return sheet;
     }
 
-    async removeWorksheet(sheet_id: any) {
-        if (!this.isAuthActive())
-            throw new Error(REQUIRE_AUTH_MESSAGE);
+    // async removeWorksheet(sheet_id: any) {
+    //     if (!this.isAuthActive())
+    //         throw new Error(REQUIRE_AUTH_MESSAGE);
 
-        if (sheet_id instanceof SpreadsheetWorksheet) return await sheet_id.del();
-        await this.makeFeedRequest(GOOGLE_FEED_URL + "worksheets/" + this.ss_key + "/private/full/" + sheet_id, 'DELETE', null);
-    }
+    //     if (sheet_id instanceof SpreadsheetWorksheet) return await sheet_id.del();
+    //     await this.makeFeedRequest(GOOGLE_FEED_URL + "worksheets/" + this.ss_key + "/private/full/" + sheet_id, 'DELETE', null);
+    // }
 
 
-    async getHeaderRow(worksheet_id: string, opts: any) {
+    async getHeaderRow(worksheet_id: number, opts: any) {
         // the first row is used as titles/keys and is not included
         const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_id}!A1:Z1`], 'GET', {});
         const data = response.result;
         const entries = response.body.values;
-        return new SpreadsheetRow(this, entries[0], 0);
+        return new SpreadsheetRow(this, entries[0], worksheet_id, 0);
     }
 
     map: any = {};
 
-    async getRows(worksheet_id: string, opts: any) {
+    async getRows(worksheet_id: number, opts: any) {
         // the first row is used as titles/keys and is not included
         var query: any = {}
 
@@ -335,7 +335,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                     entries[0].forEach((key: string, index: number) => {
                         clone[key] = row_data[index];
                     });
-                    rows.push(new SpreadsheetRow(this, clone, rowIndex));
+                    rows.push(new SpreadsheetRow(this, clone, worksheet_id, rowIndex));
                 }
             });
         } catch (error) {
@@ -346,7 +346,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         return rows;
     }
 
-    async addRow(worksheet_id: string, data: any, headerRow: string[]) {
+    async addRow(worksheet_id: number, data: any, headerRow: string[]) {
         // validate the header row of the sheet / get the values
 
 
@@ -404,7 +404,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
             const result: any = response;
 
-            const row = new SpreadsheetRow(this, data, 0);
+            const row = new SpreadsheetRow(this, data, worksheet_id, 0);
             return row;
         } catch (error) {
             console.error('Capured error at addRow', error);
@@ -413,7 +413,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
 
-    async updateRow(worksheet_id: string, data: any, headerRow: string[], index: number) {
+    async updateRow(worksheet_id: number, data: any, headerRow: string[], index: number) {
         // validate the header row of the sheet / get the values
 
         //set the order of the values with the order of the columns
@@ -478,8 +478,49 @@ export class GoogleSpreadsheet extends EventEmitter {
 
             const result: any = response;
 
-            const row = new SpreadsheetRow(this, data, 0);
+            const row = new SpreadsheetRow(this, data, worksheet_id, 0);
             return row;
+        } catch (error) {
+            console.error('Capured error at addRow', error);
+            throw (new Error(error));
+        }
+    }
+
+    async removeRow(worksheet_id: number, index: number) {
+
+        //find index for sheet
+        this.info.worksheets.forEach((sheet: any, index: number) => {
+            if (sheet.id === worksheet_id) {
+                worksheet_id = sheet.data.sheetId;
+            }
+        });
+
+        const request = {
+            "requests": [
+                {
+                    "deleteRange": {
+                        "range": {
+
+                            "sheetId": worksheet_id,
+                            "startRowIndex": index,
+                            "endRowIndex": Number(index) + 1,
+                            "startColumnIndex": 0,
+                            "endColumnIndex": 1000
+
+                        },
+                        "shiftDimension": "ROWS"
+                    },
+                }
+
+            ],
+            "includeSpreadsheetInResponse": false,
+            "responseIncludeGridData": false
+        }
+        try {
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            this.emit('delete', { sheetId: worksheet_id });
+            const result: any = response;
+
         } catch (error) {
             console.error('Capured error at addRow', error);
             throw (new Error(error));
