@@ -4,8 +4,7 @@ export class SpreadsheetCell {
   links: any;
   _links: any;
   spreadsheet: any;
-  row: number;
-  col: number;
+  
   batchId: string = '';
   ws_id: string = '';
   ss: string = '';
@@ -23,25 +22,7 @@ export class SpreadsheetCell {
   constructor(spreadsheet: any, ss_key: string, worksheet_id: string, data: any) {
 
     this.spreadsheet = spreadsheet;
-    this.row = parseInt(data['gs:cell']['$']['row']);
-    this.col = parseInt(data['gs:cell']['$']['col']);
-    this.batchId = 'R' + this.row + 'C' + this.col;
-    if (data['id'] == "https://spreadsheets.google.com/feeds/cells/" + ss_key + "/" + worksheet_id + '/' + this.batchId) {
-      this.ws_id = worksheet_id;
-      this.ss = ss_key;
-    } else {
-      this.id = data['id'];
-    }
 
-    this['_links'] = [];
-    this.links = forceArray(data.link);
-    for (var i = 0; i < this.links.length; i++) {
-      var link = this.links[i];
-      if (link['$']['rel'] == "self" && link['$']['href'] == this.getSelf()) continue;
-      if (link['$']['rel'] == "edit" && link['$']['href'] == this.getEdit()) continue;
-      this['_links'][link['$']['rel']] = link['$']['href'];
-    }
-    if (this['_links'].length == 0) delete this['_links'];
 
     this.updateValuesFromResponseData(data);
 
@@ -49,49 +30,16 @@ export class SpreadsheetCell {
   }
 
   getId() {
-    if (!!this.id) {
-      return this.id;
-    } else {
-      return "https://spreadsheets.google.com/feeds/cells/" + this.ss + "/" + this.ws_id + '/' + this.batchId;
-    }
+
   }
 
   getEdit() {
-    if (!!this['_links'] && !!this['_links']['edit']) {
-      return this['_links']['edit'];
-    } else {
-      return this.getId().replace(this.batchId, "private/full/" + this.batchId);
-    }
+
   }
 
-  getSelf() {
-    if (!!this['_links'] && !!this['_links']['edit']) {
-      return this['_links']['edit'];
-    } else {
-      return this.getId().replace(this.batchId, "private/full/" + this.batchId);
-    }
-  }
 
   updateValuesFromResponseData(_data: any) {
-    // formula value
-    var input_val = _data['gs:cell']['$']['inputValue'];
-    // inputValue can be undefined so substr throws an error
-    // still unsure how this situation happens
-    if (input_val && input_val.substr(0, 1) === '=') {
-      this._formula = input_val;
-    } else {
-      this._formula = undefined;
-    }
 
-    // numeric values
-    if (_data['gs:cell']['$']['numericValue'] !== undefined) {
-      this._numericValue = parseFloat(_data['gs:cell']['$']['numericValue']);
-    } else {
-      this._numericValue = undefined;
-    }
-
-    // the main "value" - its always a string
-    this._value = _data['gs:cell']['_'] || '';
   }
 
   async setValue(new_value: any) {
@@ -171,7 +119,7 @@ export class SpreadsheetCell {
 
 
   async save() {
-    
+
   }
 
   async del() {
