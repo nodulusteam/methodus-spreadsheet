@@ -1,5 +1,4 @@
 import request from 'request-promise';
-import * as  xml2js from 'xml2js';
 import * as  http from 'http';
 import * as  querystring from 'querystring';
 import * as  _ from 'lodash';
