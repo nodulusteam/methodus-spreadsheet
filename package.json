@@ -2,7 +2,7 @@
   "author": "nodulusteam",
   "name": "@methodus/google-spreadsheet",
   "description": "Google Spreadsheets Data API -- simple interface to read/write rows/cells, manage sheets",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "./build/index.js",
   "typings": "./build/index.d.ts",
   "license": "Unlicense",
