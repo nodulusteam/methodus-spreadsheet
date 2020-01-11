@@ -1,13 +1,13 @@
-var path = require('path');
+const path = require('path');
 import { GoogleSpreadsheet } from '../GoogleSpreadsheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
 
-var _ = require('lodash');
+const _ = require('lodash');
 
 
 
-var docs: any = {};
+const docs: any = {};
 Object.keys(sheet_ids).forEach(function (key) {
   docs[key] = new GoogleSpreadsheet(sheet_ids[key]);
 });
@@ -73,24 +73,7 @@ describe('Authentication', () => {
         }
       });
 
-      //   it('should fail if the key is no good', function (done) {
-      //     docs['private'].useServiceAccountAuth({
-      //       client_email: 'test@example.com',
-      //       private_key: 'not-a-real-key'
-      //     }, function (err) {
-      //       err.should.be.an.error;
-      //       done();
-      //     });
-      //   });
-
-      //   it('should fail if the email and key do not match', function (done) {
-      //     var bad_creds = _.clone(creds);
-      //     bad_creds.client_email = 'a' + bad_creds.client_email;
-      //     docs['private'].useServiceAccountAuth(bad_creds, function (err) {
-      //       err.should.be.an.error;
-      //       done();
-      //     });
-      //   });
+     
 
       test('should succeed if the creds are valid', async () => {
         let errorExist = false

@@ -1,12 +1,12 @@
-var path = require('path');
+const path = require('path');
 import { GoogleSpreadsheet } from '../GoogleSpreadsheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
-var _ = require('lodash');
+const _ = require('lodash');
 
 
 
-var docs: any = {};
+const docs: any = {};
 Object.keys(sheet_ids).forEach(function (key) {
   docs[key] = new GoogleSpreadsheet(sheet_ids[key]);
 });

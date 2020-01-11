@@ -62,7 +62,7 @@ export class SpreadsheetCell {
     if (!val)
       this._clearValue();
 
-    var numeric_val = parseFloat(val);
+    const numeric_val = parseFloat(val);
     if (!isNaN(numeric_val)) {
       this._numericValue = numeric_val;
       this._value = val.toString();

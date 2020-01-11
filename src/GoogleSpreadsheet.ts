@@ -11,13 +11,13 @@ import v1 from 'uuid/v1';
 import { EventEmitter } from 'events';
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Z'];
 
-///12Wmxa8_scZ-np2rKs7lbWjyyIBdSRNMikwUGx_ZC_pY/values/A1%3AI1000
 
 
-var GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets/";
-var GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds"];
 
-var REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
+const GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets/";
+const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds"];
+
+const REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
 
 // The main class that represents a single sheet
 // this is the main module.exports
@@ -151,20 +151,19 @@ export class GoogleSpreadsheet extends EventEmitter {
 
         if (method == 'PUT' || method == 'POST' && url.indexOf('/batch') != -1) {
             headers['If-Match'] = '*';// v1();//'*';
-            // var query = "?valueInputOption=USER_ENTERED";
-            // url += query;
+
 
         }
 
         if (method == 'GET' && query_or_data) {
-            var query = "?" + querystring.stringify(query_or_data);
+            let query = "?" + querystring.stringify(query_or_data);
             // replacements are needed for using     structured queries on getRows
             query = query.replace(/%3E/g, '>');
             query = query.replace(/%3D/g, '=');
             query = query.replace(/%3C/g, '<');
             url += query;
         }
-        console.warn(url);
+
         try {
             let bufferBody;
             if (query_or_data && Object.keys(query_or_data).length) {
@@ -215,7 +214,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             if (data === true) {
                 throw new Error('No response to getInfo call');
             }
-            var ss_data = {
+            const ss_data = {
                 id: data.spreadsheetId,
                 title: data.properties.title,
                 worksheets: [] as any
@@ -249,7 +248,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
         if (!this.isAuthActive()) return cb(new Error(REQUIRE_AUTH_MESSAGE));
 
-        var defaults = {
+        const defaults = {
             title: 'Worksheet ' + (+new Date()),  // need a unique title
             rowCount: 50,
             colCount: 20
@@ -262,17 +261,30 @@ export class GoogleSpreadsheet extends EventEmitter {
             opts.colCount = opts.headers.length;
         }
 
-        var data_xml = '<entry xmlns="http://www.w3.org/2005/Atom" xmlns:gs="http://schemas.google.com/spreadsheets/2006"><title>' +
-            opts.title +
-            '</title><gs:rowCount>' +
-            opts.rowCount +
-            '</gs:rowCount><gs:colCount>' +
-            opts.colCount +
-            '</gs:colCount></entry>';
+        const request = {
+            "requests": [
+                {
+                    "addSheet": {
+                        "properties": {
+                            "title": opts.title,
+                            "gridProperties": {
+                                // "rowCount": 20,
+                                // "columnCount": 12
+                            },
+                            "tabColor": opts.tabColor || {
+                                "red": 1.0,
+                                "green": 0.3,
+                                "blue": 0.4
+                            }
+                        }
+                    }
+                }
+            ]
+        }
 
-        const data = await this.makeFeedRequest(["worksheets", this.ss_key], 'POST', data_xml);
 
-        var sheet = new SpreadsheetWorksheet(self, data);
+        const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+        const sheet = new SpreadsheetWorksheet(this, data.body.replies[0].addSheet);
         this.worksheets = this.worksheets || [];
         this.worksheets.push(sheet);
         await sheet.setHeaderRow(opts.headers);
@@ -293,14 +305,18 @@ export class GoogleSpreadsheet extends EventEmitter {
         const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_id}!A1:Z1`], 'GET', {});
         const data = response.result;
         const entries = response.body.values;
-        return new SpreadsheetRow(this, entries[0], worksheet_id, 0);
+        if (entries) {
+            return new SpreadsheetRow(this, entries[0], worksheet_id, 0);
+        } else {
+            return new SpreadsheetRow(this, [], worksheet_id, 0);
+        }
     }
 
     map: any = {};
 
     async getRows(worksheet_id: number, opts: any) {
         // the first row is used as titles/keys and is not included
-        var query: any = {}
+        const query: any = {}
 
         // if (opts.offset) query["start-index"] = opts.offset;
         // else if (opts.start) query["start-index"] = opts.start;
@@ -320,23 +336,25 @@ export class GoogleSpreadsheet extends EventEmitter {
             const data = response.result;
             const entries = response.body.values;
             const objectTemplate: any = {};
-            entries[0].forEach((key: string, index: number) => {
-                map[COLUMNS[index]] = key;
-                objectTemplate[key] = null;
-            });
-
             if (data === true) {
                 throw (new Error('No response to getRows call'))
             }
-            entries.forEach((row_data: any, rowIndex: number) => {
-                if (rowIndex > 0) {
-                    const clone = JSON.parse(JSON.stringify(objectTemplate));
-                    entries[0].forEach((key: string, index: number) => {
-                        clone[key] = row_data[index];
-                    });
-                    rows.push(new SpreadsheetRow(this, clone, worksheet_id, rowIndex));
-                }
-            });
+            if (entries && entries.length > 0) {
+                entries[0].forEach((key: string, index: number) => {
+                    map[COLUMNS[index]] = key;
+                    objectTemplate[key] = null;
+                });
+
+                entries.forEach((row_data: any, rowIndex: number) => {
+                    if (rowIndex > 0) {
+                        const clone = JSON.parse(JSON.stringify(objectTemplate));
+                        entries[0].forEach((key: string, index: number) => {
+                            clone[key] = row_data[index];
+                        });
+                        rows.push(new SpreadsheetRow(this, clone, worksheet_id, rowIndex));
+                    }
+                });
+            }
         } catch (error) {
             console.error('Captured error at getRows ', error);
 
@@ -472,7 +490,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
-            this.emit('insert', { sheetId: worksheet_id });
+            this.emit('update', { sheetId: worksheet_id });
 
 
             const result: any = response;
@@ -532,7 +550,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
         // Supported options are:
         // min-row, max-row, min-col, max-col, return-empty
-        var query = _.assign({}, opts);
+        const query = _.assign({}, opts);
 
 
         const response: any = await this.makeFeedRequest(["cells", this.ss_key, worksheet_id], 'GET', query);
@@ -541,8 +559,8 @@ export class GoogleSpreadsheet extends EventEmitter {
             throw (new Error('No response to getCells call'))
         }
 
-        var cells = [];
-        var entries = forceArray(data['entry']);
+        const cells = [];
+        const entries = forceArray(data['entry']);
         while (entries.length > 0) {
             cells.push(new SpreadsheetCell(this, this.ss_key, worksheet_id, entries.shift()));
         }
