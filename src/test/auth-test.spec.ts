@@ -42,9 +42,9 @@ describe('Authentication', () => {
 
       ['public', 'public-read-only'].forEach((key: string) => {
         test('reading should succeed on a ' + key + ' doc', async () => {
-          const info = await docs[key].getInfo();       
+          const info = await docs[key].getInfo();
           expect(info.title).toBe(key);
-        });      
+        });
       });
 
 
@@ -54,9 +54,10 @@ describe('Authentication', () => {
           test('should fail on a ' + key + ' doc', async () => {
             try {
               const sheet = await docs[key].addWorksheet();
-              
+
             } catch (err) {
-              expect(err.message).toContain('authenticate');
+              
+              expect(err).toContain('The caller does not have permission');
             }
           });
         });
@@ -64,7 +65,7 @@ describe('Authentication', () => {
     });
 
 
-    xdescribe('authentication', () => {
+    describe('authentication', () => {
       test('should fail if the token is empty', async () => {
         try {
           await docs['private'].useServiceAccountAuth({});
@@ -73,7 +74,7 @@ describe('Authentication', () => {
         }
       });
 
-     
+
 
       test('should succeed if the creds are valid', async () => {
         let errorExist = false
@@ -85,36 +86,16 @@ describe('Authentication', () => {
 
         expect(errorExist).toBeFalsy();
 
-      });
-
-      test('should accept a string which is a path to the file', async () => {
-        let errorExist = false
-        try {
-
-          var creds_file_path = path.resolve(process.cwd() + '/service-account-creds.json');
-          docs['private'].useServiceAccountAuth(creds_file_path);
-        } catch (error) {
-          errorExist = true;
-        }
-        expect(errorExist).toBeFalsy();
-
-      });
-
-      //   it('should fail if the path is invalid', function (done) {
-      //     var creds_file_path = path.resolve(__dirname + '/doesnt-exist.json');
-      //     docs['private'].useServiceAccountAuth(creds_file_path, function (err) {
-      //       err.should.be.an.error;
-      //       done();
-      //     });
-      //   });
+      });   
     });
 
 
-    xdescribe('with auth', () => {
+    describe('with auth', () => {
 
 
       _.each(['public', 'public-read-only', 'private'], (key: string) => {
         test('getInfo should succeed on a ' + key + ' doc', async () => {
+          await docs[key].useServiceAccountAuth(creds);
           const info = await docs[key].getInfo();
           expect(info).toBeDefined();
         });

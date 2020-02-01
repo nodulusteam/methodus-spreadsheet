@@ -5,7 +5,6 @@ import * as  _ from 'lodash';
 const GoogleAuth = require('google-auth-library');
 import { SpreadsheetRow } from './SpreadsheetRow';
 import { forceArray, xmlSafeColumnName, xmlSafeValue } from './functions';
-import { SpreadsheetCell } from './SpreadsheetCell';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import v1 from 'uuid/v1';
 import { EventEmitter } from 'events';
@@ -32,7 +31,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     ss_key: any;
     //rows: any = [];
-    worksheets: any;
+    worksheets: SpreadsheetWorksheet[] = [];
     info: any;
 
 
@@ -68,14 +67,15 @@ export class GoogleSpreadsheet extends EventEmitter {
         return cb(new Error('Google has officially deprecated ClientLogin. Please upgrade this module and see the readme for more instrucations'))
     }
 
-    async useServiceAccountAuth(creds: any) {
-        if (typeof creds == 'string') {
-            try {
-                creds = require(creds);
-            } catch (err) {
-                throw (new Error(err));
-            }
-        }
+    async useServiceAccountAuth(creds: { client_email: string, private_key: string }) {
+
+        // if (typeof creds == 'string') {
+        //     try {
+        //         creds = require(creds);
+        //     } catch (err) {
+        //         throw (new Error(err));
+        //     }
+        // }
         this.jwt_client = new this.auth_client.JWT(creds.client_email, null, creds.private_key, GOOGLE_AUTH_SCOPE, null);
         await this.renewJwtAuth();
     }
@@ -220,9 +220,12 @@ export class GoogleSpreadsheet extends EventEmitter {
                 worksheets: [] as any
             }
 
-            data.sheets.forEach((ws_data: any) => {
-                ss_data.worksheets.push(new SpreadsheetWorksheet(this, ws_data));
-            });
+            if (data.sheets) {
+                data.sheets.forEach((ws_data: any) => {
+                    ss_data.worksheets.push(new SpreadsheetWorksheet(this, ws_data));
+                });
+            }
+
 
             this.info = ss_data;
             this.worksheets = ss_data.worksheets;
@@ -236,18 +239,26 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
     // NOTE: worksheet IDs start at 1
-
-    async addWorksheet(opts: any, cb: any) {
-        // make opts optional
-        if (typeof opts == 'function') {
-            cb = opts;
-            opts = {};
+    async removeWorksheet(sheetid: any) {
+        const request = {
+            "requests": [
+                {
+                    "deleteSheet": {
+                        "sheetId": sheetid
+                    }
+                }
+            ]
         }
 
-        cb = cb || _.noop;
+        const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
 
-        if (!this.isAuthActive()) return cb(new Error(REQUIRE_AUTH_MESSAGE));
+        this.worksheets = this.worksheets || [];
 
+        return data;
+    }
+
+    async addWorksheet(opts: any) {
+        // make opts optional
         const defaults = {
             title: 'Worksheet ' + (+new Date()),  // need a unique title
             rowCount: 50,
@@ -284,7 +295,8 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
         const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
-        const sheet = new SpreadsheetWorksheet(this, data.body.replies[0].addSheet);
+        debugger;
+        const sheet = new SpreadsheetWorksheet(this, data.body.replies[0].addSheet.properties);
         this.worksheets = this.worksheets || [];
         this.worksheets.push(sheet);
         await sheet.setHeaderRow(opts.headers);
@@ -430,6 +442,79 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
 
+
+
+
+    async addRows(worksheet_id: number, data: any, headerRow: string[]) {
+        // validate the header row of the sheet / get the values
+
+
+        //set the order of the values with the order of the columns
+
+        const request = {
+            "requests": [
+                {
+                    "updateCells": {
+                        "range": {
+
+                            "sheetId": worksheet_id,
+                            "startRowIndex": 0,
+                            "endRowIndex": 1,
+                            "startColumnIndex": 0,
+                            "endColumnIndex": 1000
+
+                        },
+                        "rows": [{
+                            "values": headerRow.map((header) => {
+                                return {
+                                    "userEnteredValue": {
+                                        "stringValue": header
+                                    }
+                                }
+                            })
+                        }],
+                        "fields": "userEnteredValue"
+                    },
+                }
+                , {
+                    "appendCells": {
+                        "sheetId": worksheet_id,
+                        "rows": data.map((row: any) => {
+                            return {
+                                "values": headerRow.map((field) => {
+                                    return {
+                                        "userEnteredValue": {
+                                            "stringValue": row[field]
+                                        }
+                                    };
+                                })
+                            }
+                        }),
+                        "fields": "userEnteredValue"
+                    },
+                }
+            ],
+            "includeSpreadsheetInResponse": false,
+            "responseIncludeGridData": false
+        }
+        try {
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            this.emit('insert', { sheetId: worksheet_id });
+
+
+            const result: any = response;
+
+            const row = new SpreadsheetRow(this, data, worksheet_id, 0);
+            return row;
+        } catch (error) {
+            console.error('Capured error at addRow', error);
+            throw (new Error(error));
+        }
+    }
+
+
+
+
     async updateRow(worksheet_id: number, data: any, headerRow: string[], index: number) {
         // validate the header row of the sheet / get the values
 
@@ -545,26 +630,5 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
 
-    async getCells(worksheet_id: string, opts: any) {
 
-
-        // Supported options are:
-        // min-row, max-row, min-col, max-col, return-empty
-        const query = _.assign({}, opts);
-
-
-        const response: any = await this.makeFeedRequest(["cells", this.ss_key, worksheet_id], 'GET', query);
-        const data = response.result;
-        if (data === true) {
-            throw (new Error('No response to getCells call'))
-        }
-
-        const cells = [];
-        const entries = forceArray(data['entry']);
-        while (entries.length > 0) {
-            cells.push(new SpreadsheetCell(this, this.ss_key, worksheet_id, entries.shift()));
-        }
-
-        return cells;
-    }
 };

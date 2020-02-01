@@ -1,4 +1,3 @@
-import { forceArray } from "./functions";
 import * as  _ from 'lodash';
 
 // Classes
@@ -14,33 +13,13 @@ export class SpreadsheetWorksheet {
 
     constructor(spreadsheet: any, data: any) {
         this.spreadsheet = spreadsheet;
-        this.data = data.properties;
-
-
-        // this.url = data.id;
-        this.id = this.data.title;
+        this.data = data.properties || data;
+        debugger;
+        this.id = this.data.sheetId;
         this.title = this.data.title;
         this.rowCount = this.data.gridProperties.rowCount;
         this.colCount = this.data.gridProperties.columnCount;
-        // this['_links'] = [];
-        // links = forceArray(data.link);
-        // links.forEach((link: any) => {
-        //     this['_links'][link['$']['rel']] = link['$']['href'];
-        // });
-        // this['_links']['cells'] = self['_links']['http://schemas.google.com/spreadsheets/2006#cellsfeed'];
-        // this['_links']['bulkcells'] = self['_links']['cells'] + '/batch';
-
-
     }
-
-
-
-
-
-
-
-
-
 
     async getHeaderRow(opts: any) {
         return await this.spreadsheet.getHeaderRow(this.id, opts);
@@ -49,9 +28,7 @@ export class SpreadsheetWorksheet {
     async getRows(opts: any) {
         return await this.spreadsheet.getRows(this.id, opts);
     }
-    async getCells(opts?: any) {
-        return await this.spreadsheet.getCells(this.id, opts);
-    }
+
 
     async updateRow(index: number, data: any, headerRow: any[]) {
         return await this.spreadsheet.updateRow(this.data.sheetId, data, headerRow, index);
@@ -60,7 +37,9 @@ export class SpreadsheetWorksheet {
     async addRow(data: any, headerRow: any[]) {
         return await this.spreadsheet.addRow(this.data.sheetId, data, headerRow);
     }
-
+    async addRows(data: any, headerRow: any[]) {
+        return await this.spreadsheet.addRows(this.data.sheetId, data, headerRow);
+    }
 
 
 
@@ -86,6 +65,6 @@ export class SpreadsheetWorksheet {
         }
         const response: any = await this.spreadsheet.makeFeedRequest([this.spreadsheet.id, 'values', `${this.id}!A1:Z1`], 'PUT', headerPayload);
 
- 
+
     }
 }

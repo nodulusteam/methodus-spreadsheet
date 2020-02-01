@@ -2,31 +2,26 @@ const path = require('path');
 import { GoogleSpreadsheet } from '../GoogleSpreadsheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
+import { SpreadsheetWorksheet } from '../SpreadsheetWorksheet';
 const _ = require('lodash');
-
+import faker from 'faker';
+import { Sheet } from '../Sheet';
 
 
 const docs: any = {};
 Object.keys(sheet_ids).forEach(function (key) {
-  docs[key] = new GoogleSpreadsheet(sheet_ids[key]);
-});
-
-
-function getSheetName() { return 'test sheet' + (+new Date()); }
-Object.values(docs).forEach(async (doc: any) => {
-  await doc.useServiceAccountAuth(creds);
+  docs[key] = new Sheet(sheet_ids[key], creds);
 });
 
 
 
-(() => {
-  return docs['private'].getInfo().catch((err: Error) => {
-    console.error(err);
-  }).then((data: any) => {
-    console.error(data);
+(async () => {
 
-  })
-
+  const email = faker.internet.email();
+  const results = await docs['private'].insert(1, { email });
+  docs['private'].info.worksheets.forEach(async (worksheet: SpreadsheetWorksheet) => {
+    const removeResult = await docs['private'].doc.removeWorksheet(worksheet.id);
+  });
 })()
 
 
