@@ -14,7 +14,6 @@ export class SpreadsheetWorksheet {
     constructor(spreadsheet: any, data: any) {
         this.spreadsheet = spreadsheet;
         this.data = data.properties || data;
-        debugger;
         this.id = this.data.sheetId;
         this.title = this.data.title;
         this.rowCount = this.data.gridProperties.rowCount;

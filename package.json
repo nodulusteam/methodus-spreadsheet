@@ -7,6 +7,7 @@
   "typings": "./build/index.d.ts",
   "license": "Unlicense",
   "keywords": [
+    "methodus",
     "google spreadsheets",
     "google",
     "spreadsheet",
@@ -16,9 +17,6 @@
     "api",
     "google sheets"
   ],
-  "engines": {
-    "node": ">=0.8.0"
-  },
   "dependencies": {
     "google-auth-library": "^0.10.0",
     "lodash": "^4.17.15",    

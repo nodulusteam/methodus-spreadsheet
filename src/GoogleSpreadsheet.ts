@@ -295,7 +295,6 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
         const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
-        debugger;
         const sheet = new SpreadsheetWorksheet(this, data.body.replies[0].addSheet.properties);
         this.worksheets = this.worksheets || [];
         this.worksheets.push(sheet);
@@ -327,24 +326,12 @@ export class GoogleSpreadsheet extends EventEmitter {
     map: any = {};
 
     async getRows(worksheet_id: number, opts: any) {
-        // the first row is used as titles/keys and is not included
         const query: any = {}
-
-        // if (opts.offset) query["start-index"] = opts.offset;
-        // else if (opts.start) query["start-index"] = opts.start;
-
-        // if (opts.limit) query["max-results"] = opts.limit;
-        // else if (opts.num) query["max-results"] = opts.num;
-
-        // if (opts.orderby) query["orderby"] = opts.orderby;
-        // if (opts.reverse) query["reverse"] = 'true';
-
-        // }
-        // if (opts.query) query['sq'] = opts.query;
         const map: any = {};
         const rows: any = [];
         try {
-            const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_id}!A1:Z2000`], 'GET', query);
+            const worksheetName = this.info.worksheets[worksheet_id].title;
+            const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheetName}!A1:Z1000`], 'GET', query);
             const data = response.result;
             const entries = response.body.values;
             const objectTemplate: any = {};
@@ -376,10 +363,6 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
     async addRow(worksheet_id: number, data: any, headerRow: string[]) {
-        // validate the header row of the sheet / get the values
-
-
-        //set the order of the values with the order of the columns
 
         const request = {
             "requests": [
@@ -446,10 +429,6 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
     async addRows(worksheet_id: number, data: any, headerRow: string[]) {
-        // validate the header row of the sheet / get the values
-
-
-        //set the order of the values with the order of the columns
 
         const request = {
             "requests": [
@@ -516,10 +495,6 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
     async updateRow(worksheet_id: number, data: any, headerRow: string[], index: number) {
-        // validate the header row of the sheet / get the values
-
-        //set the order of the values with the order of the columns
-
         const request = {
             "requests": [
                 {
