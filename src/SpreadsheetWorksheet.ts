@@ -1,4 +1,5 @@
 import * as  _ from 'lodash';
+import { SpreadsheetRow } from './SpreadsheetRow';
 
 // Classes
 export class SpreadsheetWorksheet {
@@ -21,15 +22,15 @@ export class SpreadsheetWorksheet {
     }
 
     async getHeaderRow(opts: any) {
-        return await this.spreadsheet.getHeaderRow(this.id, opts);
+        return await this.spreadsheet.getHeaderRow(this.title, opts);
     }
 
     async getRows(opts: any) {
-        return await this.spreadsheet.getRows(this.id, opts);
+        return await this.spreadsheet.getRows(this.title, opts);
     }
 
 
-    async updateRow(index: number, data: any, headerRow: any[]) {
+    async updateRow(index: number, data: any, headerRow: any[]): Promise<SpreadsheetRow> {
         return await this.spreadsheet.updateRow(this.data.sheetId, data, headerRow, index);
     }
 

@@ -34,7 +34,7 @@ describe('Authentication', () => {
       });
 
       test('should fail on a private doc', async () => {
-        return docs['private'].getRows(1, {}).catch((err: string) => {
+        return docs['private'].getRows('test', {}).catch((err: string) => {
           expect(err).toContain('The caller does not have permission');
         });
 
@@ -53,10 +53,10 @@ describe('Authentication', () => {
         _.each(['public', 'public-read-only', 'private'], (key: string) => {
           test('should fail on a ' + key + ' doc', async () => {
             try {
-              const sheet = await docs[key].addWorksheet();
+              const sheet = await docs[key].addWorksheet('test');
 
             } catch (err) {
-              
+
               expect(err).toContain('The caller does not have permission');
             }
           });
@@ -86,7 +86,7 @@ describe('Authentication', () => {
 
         expect(errorExist).toBeFalsy();
 
-      });   
+      });
     });
 
 

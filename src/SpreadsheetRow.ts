@@ -5,11 +5,11 @@ let RowSpreadsheet: any = null;
 export class SpreadsheetRow {
     data: any;
     index: number;
-    sheetId: number;
+    sheetId: string;
     /**
      *
      */
-    constructor(spreadsheet: any, data: any, sheetId: number, rowIndex: number) {
+    constructor(spreadsheet: any, data: any, sheetId: string, rowIndex: number) {
         RowSpreadsheet = spreadsheet;
         this.sheetId = sheetId;
         this.data = data;

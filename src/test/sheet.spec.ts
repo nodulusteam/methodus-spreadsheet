@@ -1,13 +1,12 @@
 const path = require('path');
+import faker from 'faker';
 import { Sheet, getSheet } from '../Sheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
-import faker from 'faker';
 import { SpreadsheetWorksheet } from '../SpreadsheetWorksheet';
 
 const _ = require('lodash');
 const docs: { [key: string]: Sheet } = {};
-function getSheetName() { return 'test sheet' + (+new Date()); }
 
 describe('Authentication', () => {
   beforeAll(() => {
@@ -21,7 +20,7 @@ describe('Authentication', () => {
       jest.setTimeout(1000 * 30)
       for (const sheet of Object.values(docs)) {
         try {
-          const results = await sheet.query(0);
+          const results = await sheet.query('test');
           expect(results).toBeDefined();
 
         } catch (error) {
@@ -31,24 +30,53 @@ describe('Authentication', () => {
     });
   });
 
-  describe('writing', () => {
+  describe('writing private doc', () => {
     const email = faker.internet.email();
     let insertedRow: any;
-    test('insert into private doc', async () => {
-      const results = await docs['private'].insert(1, { email });
+    let updatedRow: any;
+    test('insert', async () => {
+      const results = await docs['private'].insert('test', { email });
       insertedRow = results;
-      expect(results).toBeDefined;
+      expect(results).toBeDefined();
     });
 
-    test('insert into private doc', async () => {
-      const rows = [{ email: faker.internet.email() }, { email: faker.internet.email() }, { email: faker.internet.email() }]
-      const results = await docs['private'].insertMany(2, rows);
-      expect(results).toBeDefined;
+    // test('insertMany', async () => {
+    //   const rows = [{ email: faker.internet.email() }, { email: faker.internet.email() }, { email: faker.internet.email() }]
+    //   const results = await docs['private'].insertMany('test', rows);
+    //   expect(results).toBeDefined();
+    // });
+
+    test('update', async () => {
+      insertedRow.email = faker.internet.email();
+      updatedRow = await docs['private'].update('test', insertedRow);
+      const results = await docs['private'].query('test');
+      expect(updatedRow.data.email).toBe(insertedRow.email);
+    });
+
+
+    test('updateBy', async () => {
+
+
+      const updatedResults = await docs['private'].query('test', (row: any) => row.data.email === insertedRow.email);
+      const newEmail = faker.internet.email();
+      const results = await docs['private'].updateBy('test', { email: newEmail }, (row: any) => {
+
+        return row.data['email'] === updatedRow.data.email;
+      });
+
+
+      if (results.data) {
+
+        expect(results.data.email).toBe(newEmail);
+      } else {
+
+        expect(true).toBeFalsy();
+      }
     });
 
     test('remove from private doc', async () => {
-      const results = await docs['private'].delete(1, insertedRow);
-      expect(results.email).toBe(insertedRow.email);
+      const results = await docs['private'].delete('test', insertedRow);
+      expect(results).toBeDefined();
     });
   });
 

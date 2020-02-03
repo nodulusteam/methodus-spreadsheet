@@ -1,11 +1,14 @@
 
 // const SystemCreds = process.env.CLIENT_SECRET ? JSON.parse(process.env.CLIENT_SECRET) : require('../../certs/client_secret.json');
 import uuidv1 from 'uuid/v1';
-import { GoogleSpreadsheet } from './GoogleSpreadsheet';
+import { GoogleSpreadsheet, Credentials } from './GoogleSpreadsheet';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 
 const SheetsCache: { [sheetId: string]: Sheet } = {};
-export function getSheet(sheetId: string, creds: any) {
+
+
+
+export function getSheet(sheetId: string, creds: Credentials) {
     if (!SheetsCache[sheetId]) {
         SheetsCache[sheetId] = new Sheet(sheetId, creds);
     }
@@ -31,7 +34,7 @@ export class Sheet {
         this.doc = new GoogleSpreadsheet(sheetid);
 
     }
-    public async handleHeader(dataObject: { [key: string]: any }, sheet: number) {
+    public async handleHeader(dataObject: { [key: string]: any }, sheet: string) {
         const finalObject: any = {};
         Object.keys(dataObject).forEach((key) => {
             finalObject[key] = dataObject[key];
@@ -53,7 +56,7 @@ export class Sheet {
         });
         return [finalObject, existingFields];
     }
-    public async insert(sheet: number = 0, dataObject: any) {
+    public async insert(sheet: string, dataObject: any) {
         // Authenticate with the Google Spreadsheets API.
 
         await this.doc.useServiceAccountAuth(this.credentials);
@@ -62,30 +65,29 @@ export class Sheet {
             this.info = await this.doc.getInfo();
 
         }
-        if (!this.info.worksheets[sheet]) {
+        if (!this.doc.worksheets[sheet]) {
             try {
+
                 const newSheet = await this.doc.addWorksheet({
-                    title: `Sheet ${this.info.worksheets.length + 1}`,
+                    title: `${sheet}`,
                     tabColor: {
-                        "red": 1.0,
-                        "green": 0.3,
-                        "blue": 0.4
+
                     }
                 });
-                
-                this.info.worksheets[sheet] = new SpreadsheetWorksheet(this.doc, newSheet.data);
+
+                this.doc.worksheets[sheet] = new SpreadsheetWorksheet(this.doc, newSheet.data);
+
             } catch (error) {
                 throw new Error('Cannot create sheet');
             }
-
         }
+
         const [finalObject, existingFields] = await this.handleHeader(dataObject, sheet);
 
         if (existingFields.indexOf('keyid') === -1) {
             existingFields.push('keyid');
         }
         finalObject.keyid = uuidv1();
-        // await info.worksheets[sheet].setHeaderRow(existingFields);
 
         Object.keys(finalObject).forEach((property) => {
             if (finalObject[property] !== undefined && finalObject[property] !== null) {
@@ -94,12 +96,10 @@ export class Sheet {
         });
 
 
-        const insertedRow = await this.info.worksheets[sheet].addRow(finalObject, existingFields);
-        // this.sheets[sheet].push({ index: this.info.worksheets[sheet].rowCount, data: finalObject });
+        const insertedRow = await this.doc.worksheets[sheet].addRow(finalObject, existingFields);
         this.loaded[sheet] = false;
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows({});
         this.loaded[sheet] = true;
-
 
         return finalObject;
     }
@@ -108,7 +108,7 @@ export class Sheet {
 
 
 
-    public async insertMany(sheet: number = 0, dataObject: any[]) {
+    public async insertMany(sheet: string, dataObject: any[]) {
         // Authenticate with the Google Spreadsheets API.
 
         await this.doc.useServiceAccountAuth(this.credentials);
@@ -117,17 +117,15 @@ export class Sheet {
             this.info = await this.doc.getInfo();
 
         }
-        if (!this.info.worksheets[sheet]) {
+        if (!this.doc.worksheets[sheet]) {
             try {
                 const newSheet = await this.doc.addWorksheet({
-                    title: `Sheet ${this.info.worksheets.length + 1}`,
+                    title: `${sheet}`,
                     tabColor: {
-                        "red": 1.0,
-                        "green": 0.3,
-                        "blue": 0.4
+
                     }
                 });
-                this.info.worksheets[sheet] = newSheet;
+                this.doc.worksheets[sheet] = newSheet;
             } catch (error) {
                 throw new Error('Cannot create sheet');
             }
@@ -152,7 +150,7 @@ export class Sheet {
 
 
 
-        const insertedRow = await this.info.worksheets[sheet].addRows(finalObject, existingFields);
+        const insertedRow = await this.doc.worksheets[sheet].addRows(finalObject, existingFields);
         // this.sheets[sheet].push({ index: this.info.worksheets[sheet].rowCount, data: finalObject });
         this.loaded[sheet] = false;
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows({});
@@ -164,7 +162,7 @@ export class Sheet {
 
 
 
-    public async delete(sheet: number = 0, dataObject: any, ) {
+    public async delete(sheet: string, dataObject: any, ) {
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
 
@@ -185,7 +183,7 @@ export class Sheet {
         return result;
     }
 
-    public async update(sheet: number = 0, dataObject: any) {
+    public async update(sheet: string, dataObject: any) {
 
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
@@ -206,17 +204,21 @@ export class Sheet {
 
 
 
-    public async updateBy(dataObject: any, filter: Function, sheet: number = 0) {
+    public async updateBy(sheet: string, dataObject: any, filter: Function) {
         // Authenticate with the Google Spreadsheets API.
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
         const [finalObject, existingFields] = await this.handleHeader(dataObject, sheet);
         // Authenticate with the Google Spreadsheets API.
         const row = this.sheets[sheet].filter(filter);
-        Object.assign(row[0].data, dataObject);
-        const result = await this.doc.worksheets[sheet].updateRow(row[0].index, row[0].data, existingFields);
-        return result;
 
+
+        if (row.length > 0) {
+            Object.assign(row[0].data, dataObject);
+            return this.doc.worksheets[sheet].updateRow(row[0].index, row[0].data, existingFields);
+        } else {
+            return { data: null };
+        }
     }
 
 
@@ -224,7 +226,7 @@ export class Sheet {
         return reject(new Error(error.message));
     }
 
-    public async fulltextSearch(sheet: number, text: string, sorts?: any) {
+    public async fulltextSearch(sheet: string, text: string, start: number = 0, end: number = 9, sorts?: any) {
         await this.doc.useServiceAccountAuth(this.credentials);
         if (!this.info) {
             this.info = await this.doc.getInfo();
@@ -251,7 +253,7 @@ export class Sheet {
 
     private intervals: { [key: string]: any } = {};
     private loaded: { [key: string]: boolean } = {};
-    public async query(sheet: number, query?: Function, start: number = 0, end: number = 9, sorts?: any) {
+    public async query(sheet: string, query?: Function, start: number = 0, end: number = 9, sorts?: any) : Promise<DataResult> {
 
         try {
             const ready = new Promise(async (resolve, reject) => {

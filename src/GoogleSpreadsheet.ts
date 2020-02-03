@@ -18,6 +18,10 @@ const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds"];
 
 const REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
 
+export interface Credentials {
+    client_email: string;
+    private_key: string;
+}
 // The main class that represents a single sheet
 // this is the main module.exports
 export class GoogleSpreadsheet extends EventEmitter {
@@ -31,7 +35,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     ss_key: any;
     //rows: any = [];
-    worksheets: SpreadsheetWorksheet[] = [];
+    worksheets: { [key: string]: SpreadsheetWorksheet } = {};
     info: any;
 
 
@@ -67,7 +71,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         return cb(new Error('Google has officially deprecated ClientLogin. Please upgrade this module and see the readme for more instrucations'))
     }
 
-    async useServiceAccountAuth(creds: { client_email: string, private_key: string }) {
+    async useServiceAccountAuth(creds: Credentials) {
 
         // if (typeof creds == 'string') {
         //     try {
@@ -228,7 +232,11 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
             this.info = ss_data;
-            this.worksheets = ss_data.worksheets;
+            ss_data.worksheets.forEach((sheet: any) => {
+                this.worksheets[sheet.title] = sheet;
+
+            })
+            //this.worksheets = ss_data.worksheets;
             return ss_data;
 
         } catch (error) {
@@ -250,11 +258,15 @@ export class GoogleSpreadsheet extends EventEmitter {
             ]
         }
 
-        const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+        try {
+            const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            return data;
+        } catch (error) {
+            if (error.indexOf(`You can't remove all the sheets in a document`) < 0) {
+                throw (error);
+            }
+        }
 
-        this.worksheets = this.worksheets || [];
-
-        return data;
     }
 
     async addWorksheet(opts: any) {
@@ -297,7 +309,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
         const sheet = new SpreadsheetWorksheet(this, data.body.replies[0].addSheet.properties);
         this.worksheets = this.worksheets || [];
-        this.worksheets.push(sheet);
+        this.worksheets[sheet.title] = sheet;
         await sheet.setHeaderRow(opts.headers);
         return sheet;
     }
@@ -311,7 +323,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     // }
 
 
-    async getHeaderRow(worksheet_id: number, opts: any) {
+    async getHeaderRow(worksheet_id: string, opts: any) {
         // the first row is used as titles/keys and is not included
         const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_id}!A1:Z1`], 'GET', {});
         const data = response.result;
@@ -325,13 +337,14 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     map: any = {};
 
-    async getRows(worksheet_id: number, opts: any) {
+    async getRows(worksheet_title: string, opts: any) {
         const query: any = {}
         const map: any = {};
         const rows: any = [];
         try {
-            const worksheetName = this.info.worksheets[worksheet_id].title;
-            const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheetName}!A1:Z1000`], 'GET', query);
+            const worksheet_id = this.worksheets[worksheet_title] ? this.worksheets[worksheet_title].id : worksheet_title;
+            // const worksheetName = this.info.worksheets[worksheet_id].title;
+            const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_title}!A1:Z1000`], 'GET', query);
             const data = response.result;
             const entries = response.body.values;
             const objectTemplate: any = {};
@@ -362,7 +375,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         return rows;
     }
 
-    async addRow(worksheet_id: number, data: any, headerRow: string[]) {
+    async addRow(worksheet_id: string, data: any, headerRow: string[]) {
 
         const request = {
             "requests": [
@@ -428,7 +441,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
 
-    async addRows(worksheet_id: number, data: any, headerRow: string[]) {
+    async addRows(worksheet_id: string, data: any, headerRow: string[]) {
 
         const request = {
             "requests": [
@@ -494,7 +507,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
 
-    async updateRow(worksheet_id: number, data: any, headerRow: string[], index: number) {
+    async updateRow(worksheet_id: string, data: any, headerRow: string[], index: number): Promise<SpreadsheetRow> {
         const request = {
             "requests": [
                 {
