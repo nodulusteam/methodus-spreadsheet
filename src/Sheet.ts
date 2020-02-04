@@ -1,12 +1,9 @@
-
-// const SystemCreds = process.env.CLIENT_SECRET ? JSON.parse(process.env.CLIENT_SECRET) : require('../../certs/client_secret.json');
 import uuidv1 from 'uuid/v1';
 import { GoogleSpreadsheet, Credentials } from './GoogleSpreadsheet';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
+import { SpreadsheetRow } from './SpreadsheetRow';
 
 const SheetsCache: { [sheetId: string]: Sheet } = {};
-
-
 
 export function getSheet(sheetId: string, creds: Credentials) {
     if (!SheetsCache[sheetId]) {
@@ -15,11 +12,11 @@ export function getSheet(sheetId: string, creds: Credentials) {
     return SheetsCache[sheetId];
 }
 
-
 export type DataResult = {
     info: any;
     data: any[];
 }
+
 export class Sheet {
     private sheets: any = {};
     private credentials: any = {};
@@ -204,7 +201,7 @@ export class Sheet {
 
 
 
-    public async updateBy(sheet: string, dataObject: any, filter: Function) {
+    public async updateBy(sheet: string, dataObject: any, filter: (row: SpreadsheetRow) => {}) {
         // Authenticate with the Google Spreadsheets API.
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
@@ -253,7 +250,7 @@ export class Sheet {
 
     private intervals: { [key: string]: any } = {};
     private loaded: { [key: string]: boolean } = {};
-    public async query(sheet: string, query?: Function, start: number = 0, end: number = 9, sorts?: any) : Promise<DataResult> {
+    public async query(sheet: string, query?: (row: SpreadsheetRow) => {}, start: number = 0, end: number = 9, sorts?: any): Promise<DataResult> {
 
         try {
             const ready = new Promise(async (resolve, reject) => {
