@@ -1,5 +1,5 @@
 import uuidv1 from 'uuid/v1';
-import { GoogleSpreadsheet, Credentials } from './GoogleSpreadsheet';
+import { GoogleSpreadsheet, Credentials, SheetInfo } from './GoogleSpreadsheet';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { SpreadsheetRow } from './SpreadsheetRow';
 
@@ -12,29 +12,28 @@ export function getSheet(sheetId: string, creds: Credentials) {
     return SheetsCache[sheetId];
 }
 
-export type DataResult = {
-    info: any;
-    data: any[];
+export type DataResult<Model> = {
+    info?: SheetInfo;
+    data: Model[];
 }
 
 export class Sheet {
     private sheets: any = {};
     private credentials: any = {};
-    private maps: any = {};
-    private sheetsWithMeta: any = {};
-    public info: any;
+    public info?: SheetInfo;
     public doc: GoogleSpreadsheet;
+    private intervals: { [key: string]: any } = {};
+    private loaded: { [key: string]: boolean } = {};
 
-
-    constructor(sheetid: string, credentials?: any) {
+    constructor(sheetid: string, credentials?: Credentials) {
         this.credentials = credentials;
         this.doc = new GoogleSpreadsheet(sheetid);
 
     }
-    public async handleHeader(dataObject: { [key: string]: any }, sheet: string) {
+    public async handleHeader<Model>(dataObject: Model, sheet: string) {
         const finalObject: any = {};
         Object.keys(dataObject).forEach((key) => {
-            finalObject[key] = dataObject[key];
+            finalObject[key] = (dataObject as any)[key];
         });
 
         let existingFields: string[] = [];
@@ -159,7 +158,7 @@ export class Sheet {
 
 
 
-    public async delete(sheet: string, dataObject: any, ) {
+    public async delete(sheet: string, dataObject: Partial<{ keyid: string }>) {
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
 
@@ -180,7 +179,7 @@ export class Sheet {
         return result;
     }
 
-    public async update(sheet: string, dataObject: any) {
+    public async update<Model>(sheet: string, dataObject: Partial<Model>) {
 
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
@@ -189,7 +188,7 @@ export class Sheet {
         // Authenticate with the Google Spreadsheets API.
         const row = this.sheets[sheet].filter((rowData: any) => {
             if (rowData.data) {
-                return rowData.data['keyid'] === dataObject['keyid'];
+                return rowData.data['keyid'] === (dataObject as any)['keyid'];
             }
             return false;
         });
@@ -201,20 +200,20 @@ export class Sheet {
 
 
 
-    public async updateBy(sheet: string, dataObject: any, filter: (row: SpreadsheetRow) => {}) {
+    public async updateBy<Model>(sheet: string, dataObject: Partial<Model>, filter: (row: SpreadsheetRow<Model>) => {}): Promise<DataResult<Model>> {
         // Authenticate with the Google Spreadsheets API.
         await this.doc.useServiceAccountAuth(this.credentials);
+        debugger;
         const info = await this.doc.getInfo();
         const [finalObject, existingFields] = await this.handleHeader(dataObject, sheet);
         // Authenticate with the Google Spreadsheets API.
         const row = this.sheets[sheet].filter(filter);
-
-
         if (row.length > 0) {
             Object.assign(row[0].data, dataObject);
-            return this.doc.worksheets[sheet].updateRow(row[0].index, row[0].data, existingFields);
+            const updateResult = await this.doc.worksheets[sheet].updateRow<Model>(row[0].index, row[0].data, existingFields);
+            return { data: [updateResult.data] };
         } else {
-            return { data: null };
+            return { data: [] };
         }
     }
 
@@ -248,9 +247,9 @@ export class Sheet {
         }
     }
 
-    private intervals: { [key: string]: any } = {};
-    private loaded: { [key: string]: boolean } = {};
-    public async query(sheet: string, query?: (row: SpreadsheetRow) => {}, start: number = 0, end: number = 9, sorts?: any): Promise<DataResult> {
+
+    public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {},
+        start: number = 0, end: number = 9, sorts?: any): Promise<DataResult<Model>> {
 
         try {
             const ready = new Promise(async (resolve, reject) => {
@@ -291,21 +290,22 @@ export class Sheet {
 
             await ready;
 
-            let resultObject = {
-                info: this.info, data: []
+            let resultObject: { info: SheetInfo, data: Model[] } = {
+                info: this.info!, data: []
             }
 
             if (query) {
                 if (this.sheets[sheet]) {
-                    resultObject.data = this.sheets[sheet].map((d: any) => { return Object.assign({}, d.data); }).filter(query).sort((a: any, b: any) => {
-                        return (a[sortField] > b[sortField]) ? -1 * reverse : 1 * reverse
+                    resultObject.data = this.sheets[sheet].filter(query).sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
+                        return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? -1 * reverse : 1 * reverse
                     });
                 }
             } else {
-                resultObject.data = this.sheets[sheet].map((d: any) => { return Object.assign({}, d.data); }).sort((a: any, b: any) => {
-                    return (a[sortField] > b[sortField]) ? 1 * reverse : -1 * reverse
+                resultObject.data = this.sheets[sheet].sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
+                    return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? 1 * reverse : -1 * reverse
                 });
             }
+
 
             resultObject.data = resultObject.data.slice(start, end);
             return resultObject;

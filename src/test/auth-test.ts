@@ -5,9 +5,13 @@ import creds from './service-account-creds';
 const _ = require('lodash');
 import faker from 'faker';
 import { Sheet } from '../Sheet';
+import { SpreadsheetRow } from '../SpreadsheetRow';
 
+class SheetModel {
+  email?: string;
+}
 
-const docs: any = {};
+const docs: { [key: string]: Sheet } = {};
 Object.keys(sheet_ids).forEach(function (key) {
   docs[key] = new Sheet(sheet_ids[key], creds);
 });
@@ -20,17 +24,21 @@ Object.keys(sheet_ids).forEach(function (key) {
   let results = await docs['private'].insert('default', { email });
   console.log('inserted', results);
 
-  results = await docs['private'].query('default', (row: { email: string }) => {
-    return row['email'] === email;
+  results = await docs['private'].query<SheetModel>('default', (row: SpreadsheetRow<SheetModel>) => {
+    return row.data['email'] === email
   });
 
   console.log('query', results.data);
-  results.data[0].email = faker.internet.email();
 
-  results = await docs['private'].updateBy('default', results.data[0], (row:any)=> row.data.email === email );
+
+  results = await docs['private'].updateBy<SheetModel>('default', { email: faker.internet.email() }, (row: SpreadsheetRow<SheetModel>) => {
+    console.log(row.data.email, email, row.data.email === email);
+    return row.data.email === email;
+  });
+  debugger;
   console.log('update', results);
 
-  results = await docs['private'].delete('default', results.data);
+  results = await docs['private'].delete('default', results.data[0]);
   console.log('delete', results);
 
   // docs['private'].info.worksheets.forEach(async (worksheet: SpreadsheetWorksheet) => {

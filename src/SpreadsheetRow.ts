@@ -2,8 +2,8 @@ import { xmlSafeColumnName, forceArray, xmlSafeValue } from "./functions";
 let RowSpreadsheet: any = null;
 
 
-export class SpreadsheetRow {
-    data: any;
+export class SpreadsheetRow<Model> {
+    data: Model;
     index: number;
     sheetId: string;
     /**

@@ -17,6 +17,11 @@ const GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets/"
 const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds"];
 
 const REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
+export class SheetInfo {
+    public id: string = '';
+    public title: string = '';
+    public worksheets: SpreadsheetWorksheet[] = [];
+}
 
 export interface Credentials {
     client_email: string;
@@ -207,7 +212,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
     // public API methods
-    async getInfo() {
+    async getInfo(): Promise<SheetInfo> {
         //https://sheets.googleapis.com/v4/spreadsheets/spreadsheetId?&fields=sheets.properties //fields: 'sheets.properties'
 
         try {
@@ -218,7 +223,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             if (data === true) {
                 throw new Error('No response to getInfo call');
             }
-            const ss_data = {
+            const ss_data:SheetInfo = {
                 id: data.spreadsheetId,
                 title: data.properties.title,
                 worksheets: [] as any
@@ -507,7 +512,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
 
-    async updateRow(worksheet_id: string, data: any, headerRow: string[], index: number): Promise<SpreadsheetRow> {
+    async updateRow<Model>(worksheet_id: string, data: any, headerRow: string[], index: number): Promise<SpreadsheetRow<Model>> {
         const request = {
             "requests": [
                 {
@@ -568,7 +573,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
             const result: any = response;
 
-            const row = new SpreadsheetRow(this, data, worksheet_id, 0);
+            const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
             return row;
         } catch (error) {
             console.error('Capured error at addRow', error);

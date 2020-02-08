@@ -1,12 +1,17 @@
 const path = require('path');
 import faker from 'faker';
-import { Sheet, getSheet } from '../Sheet';
+import { Sheet, getSheet, DataResult } from '../Sheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
 import { SpreadsheetWorksheet } from '../SpreadsheetWorksheet';
+import { SpreadsheetRow } from '../SpreadsheetRow';
 
 const _ = require('lodash');
 const docs: { [key: string]: Sheet } = {};
+
+class SheetModel {
+  email?: string;
+}
 
 describe('Authentication', () => {
   beforeAll(() => {
@@ -57,17 +62,16 @@ describe('Authentication', () => {
     test('updateBy', async () => {
 
 
-      const updatedResults = await docs['private'].query('test', (row: any) => row.data.email === insertedRow.email);
+      const updatedResults = await docs['private'].query<SheetModel>('test', (row: SpreadsheetRow<SheetModel>) => row.data.email === insertedRow.email);
       const newEmail = faker.internet.email();
-      const results = await docs['private'].updateBy('test', { email: newEmail }, (row: any) => {
-
-        return row.data['email'] === updatedRow.data.email;
-      });
+      const results: DataResult<SheetModel> = await docs['private'].updateBy<SheetModel>('test', { email: newEmail },
+        (row: SpreadsheetRow<SheetModel>) => {
+          return row.data['email'] === updatedRow.data.email;
+        });
 
 
       if (results.data) {
-
-        expect(results.data.email).toBe(newEmail);
+        expect(results.data[0].email).toBe(newEmail);
       } else {
 
         expect(true).toBeFalsy();
@@ -82,10 +86,12 @@ describe('Authentication', () => {
 
   afterAll(() => {
     Object.keys(sheet_ids).forEach(async (key) => {
-
-      docs[key].info.worksheets.forEach(async (worksheet: SpreadsheetWorksheet) => {
-        const removeResult = await docs[key].doc.removeWorksheet(worksheet.id);
-      });
+      const info = docs[key].info;
+      if (info) {
+        info.worksheets.forEach(async (worksheet: SpreadsheetWorksheet) => {
+          const removeResult = await docs[key].doc.removeWorksheet(worksheet.id);
+        });
+      }
     });
   });
 });

@@ -30,7 +30,7 @@ export class SpreadsheetWorksheet {
     }
 
 
-    async updateRow(index: number, data: any, headerRow: any[]): Promise<SpreadsheetRow> {
+    async updateRow<Model>(index: number, data: any, headerRow: any[]): Promise<SpreadsheetRow<Model>> {
         return await this.spreadsheet.updateRow(this.data.sheetId, data, headerRow, index);
     }
 
