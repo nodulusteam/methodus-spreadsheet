@@ -15,6 +15,7 @@ export function getSheet(sheetId: string, creds: Credentials) {
 export type DataResult<Model> = {
     info?: SheetInfo;
     data: Model[];
+    
 }
 
 export class Sheet {
@@ -298,12 +299,12 @@ export class Sheet {
                 if (this.sheets[sheet]) {
                     resultObject.data = this.sheets[sheet].filter(query).sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
                         return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? -1 * reverse : 1 * reverse
-                    });
+                    }).map(d => d.data);
                 }
             } else {
                 resultObject.data = this.sheets[sheet].sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
                     return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? 1 * reverse : -1 * reverse
-                });
+                }).map(d => d.data);
             }
 
 
