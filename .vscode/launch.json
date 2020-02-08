@@ -13,7 +13,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\build\\test\\auth-test.js",
+            "program": "${workspaceFolder}\\lib\\test\\auth-test.js",
            
         },
         {

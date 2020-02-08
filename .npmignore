@@ -1,5 +1,5 @@
 *
-!build/**
+!lib/**
 !package.json
 !readme.md
 
