@@ -1,5 +1,5 @@
 import uuidv1 from 'uuid/v1';
-import { GoogleSpreadsheet, Credentials, SheetInfo } from './GoogleSpreadsheet';
+import { GoogleSpreadsheet, Credentials, SheetInfo, PagingInfo } from './GoogleSpreadsheet';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { SpreadsheetRow } from './SpreadsheetRow';
 
@@ -12,9 +12,12 @@ export function getSheet(sheetId: string, creds: Credentials) {
     return SheetsCache[sheetId];
 }
 
-export type DataResult<Model> = {
-    info?: SheetInfo;
-    data: Model[];
+export class SheetDataResult<Model> {
+    constructor(data: Model[], ) {
+        this.data = data;
+    }
+    public info?: PagingInfo;
+    public data: Model[];
 
 }
 
@@ -55,6 +58,7 @@ export class Sheet {
     }
     public async insert(sheet: string, dataObject: any) {
         // Authenticate with the Google Spreadsheets API.
+
 
         await this.doc.useServiceAccountAuth(this.credentials);
 
@@ -201,7 +205,7 @@ export class Sheet {
 
 
 
-    public async updateBy<Model>(sheet: string, dataObject: Partial<Model>, filter: (row: SpreadsheetRow<Model>) => {}): Promise<DataResult<Model>> {
+    public async updateBy<Model>(sheet: string, dataObject: Partial<Model>, filter: (row: SpreadsheetRow<Model>) => {}): Promise<SheetDataResult<Model>> {
         // Authenticate with the Google Spreadsheets API.
         await this.doc.useServiceAccountAuth(this.credentials);
         debugger;
@@ -223,34 +227,52 @@ export class Sheet {
         return reject(new Error(error.message));
     }
 
-    public async fulltextSearch(sheet: string, text: string, start: number = 0, end: number = 9, sorts?: any) {
-        await this.doc.useServiceAccountAuth(this.credentials);
-        if (!this.info) {
-            this.info = await this.doc.getInfo();
-        }
-        const data = await this.doc.worksheets[sheet].getRows({
+    // public async fulltextSearch<Model>(sheet: string, text: string, start: number = 0, end: number = 9, sorts?: any) {
+    //     await this.doc.useServiceAccountAuth(this.credentials);
+    //     if (!this.info) {
+    //         this.info = await this.doc.getInfo();
+    //     }
+    //     const data = await this.doc.worksheets[sheet].getRows({
 
-        });
-        this.sheets[sheet] = data;
+    //     });
+    //     this.sheets[sheet] = data;
 
-        if (text) {
-            if (this.sheets[sheet]) {
-                const result = {
-                    info: this.info,
-                    data: this.sheets[sheet].filter((d: any) => {
-                        return JSON.stringify(d.data).toLowerCase().indexOf(text.toLowerCase()) > -1;
-                    }).map((d: any) => {
-                        return d.data;
-                    })
-                }
-                return result;
-            }
-        }
-    }
+    //     if (text) {
+    //         if (this.sheets[sheet]) {
 
+
+    //             let reverse = 1;
+    //             let sortField = 'id';
+    //             if (sorts && sorts.length > 0) {
+    //                 reverse = (sorts[0].sort !== 'asc') ? -1 : 1;
+    //                 sortField = sorts[0].colId;
+    //             }
+
+
+    //             const filteredRows = this.sheets[sheet].filter((d: any) => {
+    //                 return JSON.stringify(d.data).toLowerCase().indexOf(text.toLowerCase()) > -1;
+    //             }).map((d: any) => {
+    //                 return d.data;
+    //             })
+
+    //             const resultObject = {
+    //                 data: filteredRows,
+    //                 info: { total: filteredRows.length }
+    //             }
+
+    //             resultObject.data.sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
+    //                 return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? -1 * reverse : 1 * reverse
+
+
+
+    //             }
+    //             return resultObject;
+    //     }
+
+    //     }
 
     public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {},
-        start: number = 0, end: number = 9, sorts?: any): Promise<DataResult<Model>> {
+        start: number = 0, end: number = 9, sorts?: any): Promise<SheetDataResult<Model>> {
 
         try {
             const ready = new Promise(async (resolve, reject) => {
@@ -291,17 +313,22 @@ export class Sheet {
 
             await ready;
 
-            let resultObject: { info: SheetInfo, data: Model[] } = {
-                info: this.info!, data: []
+            let resultObject: { info: PagingInfo, data: Model[] } = {
+                info: { total: 0 }, data: []
             }
 
             if (query) {
                 if (this.sheets[sheet]) {
-                    resultObject.data = this.sheets[sheet].filter(query).sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
+
+                    const filteredRows = this.sheets[sheet].filter(query);
+                    resultObject.info.total = filteredRows.length;
+
+                    resultObject.data = filteredRows.sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
                         return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? -1 * reverse : 1 * reverse
                     }).map((d: SpreadsheetRow<Model>) => d.data);
                 }
             } else {
+                resultObject.info.total = this.sheets[sheet].length;
                 resultObject.data = this.sheets[sheet].sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
                     return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? 1 * reverse : -1 * reverse
                 }).map((d: SpreadsheetRow<Model>) => d.data);
@@ -312,7 +339,7 @@ export class Sheet {
             return resultObject;
 
         } catch (error) {
-            return ({ info: this.info, data: [] });
+            return ({ info: { total: 0 }, data: [] });
         }
     }
 }

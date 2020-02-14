@@ -1,6 +1,6 @@
 const path = require('path');
 import faker from 'faker';
-import { Sheet, getSheet, DataResult } from '../Sheet';
+import { Sheet, getSheet, SheetDataResult } from '../Sheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
 import { SpreadsheetWorksheet } from '../SpreadsheetWorksheet';
@@ -64,7 +64,7 @@ describe('Authentication', () => {
 
       const updatedResults = await docs['private'].query<SheetModel>('test', (row: SpreadsheetRow<SheetModel>) => row.data.email === insertedRow.email);
       const newEmail = faker.internet.email();
-      const results: DataResult<SheetModel> = await docs['private'].updateBy<SheetModel>('test', { email: newEmail },
+      const results: SheetDataResult<SheetModel> = await docs['private'].updateBy<SheetModel>('test', { email: newEmail },
         (row: SpreadsheetRow<SheetModel>) => {
           return row.data['email'] === updatedRow.data.email;
         });

@@ -22,6 +22,10 @@ export class SheetInfo {
     public title: string = '';
     public worksheets: SpreadsheetWorksheet[] = [];
 }
+export class PagingInfo {
+    total: number=0;
+
+}
 
 export interface Credentials {
     client_email: string;
@@ -78,13 +82,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     async useServiceAccountAuth(creds: Credentials) {
 
-        // if (typeof creds == 'string') {
-        //     try {
-        //         creds = require(creds);
-        //     } catch (err) {
-        //         throw (new Error(err));
-        //     }
-        // }
+   
         this.jwt_client = new this.auth_client.JWT(creds.client_email, null, creds.private_key, GOOGLE_AUTH_SCOPE, null);
         await this.renewJwtAuth();
     }
@@ -223,7 +221,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             if (data === true) {
                 throw new Error('No response to getInfo call');
             }
-            const ss_data:SheetInfo = {
+            const ss_data: SheetInfo = {
                 id: data.spreadsheetId,
                 title: data.properties.title,
                 worksheets: [] as any
