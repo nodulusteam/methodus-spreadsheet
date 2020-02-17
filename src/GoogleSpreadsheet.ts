@@ -23,7 +23,7 @@ export class SheetInfo {
     public worksheets: SpreadsheetWorksheet[] = [];
 }
 export class PagingInfo {
-    total: number=0;
+    total: number = 0;
 
 }
 
@@ -82,7 +82,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     async useServiceAccountAuth(creds: Credentials) {
 
-   
+
         this.jwt_client = new this.auth_client.JWT(creds.client_email, null, creds.private_key, GOOGLE_AUTH_SCOPE, null);
         await this.renewJwtAuth();
     }
@@ -606,6 +606,50 @@ export class GoogleSpreadsheet extends EventEmitter {
                 }
 
             ],
+            "includeSpreadsheetInResponse": false,
+            "responseIncludeGridData": false
+        }
+        try {
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            this.emit('delete', { sheetId: worksheet_id });
+            const result: any = response;
+
+        } catch (error) {
+            console.error('Capured error at addRow', error);
+            throw (new Error(error));
+        }
+    }
+
+
+
+
+    async removeRows(worksheet_id: number, indices: number[]) {
+
+        //find index for sheet
+        this.info.worksheets.forEach((sheet: any, index: number) => {
+            if (sheet.id === worksheet_id) {
+                worksheet_id = sheet.data.sheetId;
+            }
+        });
+
+        const request = {
+            "requests":
+                indices.map((index) => {
+                    return {
+                        "deleteRange": {
+                            "range": {
+
+                                "sheetId": worksheet_id,
+                                "startRowIndex": index,
+                                "endRowIndex": Number(index) + 1,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": 1000
+
+                            },
+                            "shiftDimension": "ROWS"
+                        },
+                    }
+                }),
             "includeSpreadsheetInResponse": false,
             "responseIncludeGridData": false
         }

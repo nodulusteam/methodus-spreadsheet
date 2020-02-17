@@ -45,9 +45,13 @@ export class SpreadsheetWorksheet {
 
 
     async del(sheetId: number, rangeIndex: number) {
-
         await this.spreadsheet.removeRow(sheetId, rangeIndex);
     }
+
+    async removeRows(sheetId: string, indices: number[]) {
+        return await this.spreadsheet.removeRows(sheetId, indices);
+    }
+
 
     async setHeaderRow(values: any) {
         if (!values) return;

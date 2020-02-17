@@ -184,13 +184,41 @@ export class Sheet {
         return result;
     }
 
+
+
+    public async deleteMany(sheet: string, rowKeys: string[]) {
+        await this.doc.useServiceAccountAuth(this.credentials);
+        const info = await this.doc.getInfo();
+
+        //this.errorHandler(err, reject);
+        const data = await this.doc.worksheets[sheet].getRows({});
+        this.sheets[sheet] = data;
+
+        const indices: number[] = [];
+        rowKeys.forEach((key) => {
+            this.sheets[sheet].forEach((rowData: any, index: number) => {
+                rowData.data['keyid'] === key ? indices.push(index + 1) : null;
+            });
+        });
+
+        indices.sort((a, b) => (a > b) ? -1 : 1);
+
+        console.log(this.doc.worksheets[sheet].id, indices);
+        this.loaded[sheet] = false;
+        this.sheets[sheet] = await this.doc.worksheets[sheet].removeRows(this.doc.worksheets[sheet].id, indices);
+        this.loaded[sheet] = true;
+        return indices;
+    }
+
+
+
     public async update<Model>(sheet: string, dataObject: Partial<Model>) {
 
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
         const [finalObject, existingFields] = await this.handleHeader(dataObject, sheet);
 
-        // Authenticate with the Google Spreadsheets API.
+
         const row = this.sheets[sheet].filter((rowData: any) => {
             if (rowData.data) {
                 return rowData.data['keyid'] === (dataObject as any)['keyid'];
@@ -206,12 +234,12 @@ export class Sheet {
 
 
     public async updateBy<Model>(sheet: string, dataObject: Partial<Model>, filter: (row: SpreadsheetRow<Model>) => {}): Promise<SheetDataResult<Model>> {
-        // Authenticate with the Google Spreadsheets API.
+
         await this.doc.useServiceAccountAuth(this.credentials);
         debugger;
         const info = await this.doc.getInfo();
         const [finalObject, existingFields] = await this.handleHeader(dataObject, sheet);
-        // Authenticate with the Google Spreadsheets API.
+
         const row = this.sheets[sheet].filter(filter);
         if (row.length > 0) {
             Object.assign(row[0].data, dataObject);
@@ -227,56 +255,13 @@ export class Sheet {
         return reject(new Error(error.message));
     }
 
-    // public async fulltextSearch<Model>(sheet: string, text: string, start: number = 0, end: number = 9, sorts?: any) {
-    //     await this.doc.useServiceAccountAuth(this.credentials);
-    //     if (!this.info) {
-    //         this.info = await this.doc.getInfo();
-    //     }
-    //     const data = await this.doc.worksheets[sheet].getRows({
-
-    //     });
-    //     this.sheets[sheet] = data;
-
-    //     if (text) {
-    //         if (this.sheets[sheet]) {
-
-
-    //             let reverse = 1;
-    //             let sortField = 'id';
-    //             if (sorts && sorts.length > 0) {
-    //                 reverse = (sorts[0].sort !== 'asc') ? -1 : 1;
-    //                 sortField = sorts[0].colId;
-    //             }
-
-
-    //             const filteredRows = this.sheets[sheet].filter((d: any) => {
-    //                 return JSON.stringify(d.data).toLowerCase().indexOf(text.toLowerCase()) > -1;
-    //             }).map((d: any) => {
-    //                 return d.data;
-    //             })
-
-    //             const resultObject = {
-    //                 data: filteredRows,
-    //                 info: { total: filteredRows.length }
-    //             }
-
-    //             resultObject.data.sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
-    //                 return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? -1 * reverse : 1 * reverse
-
-
-
-    //             }
-    //             return resultObject;
-    //     }
-
-    //     }
 
     public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {},
         start: number = 0, end: number = 9, sorts?: any): Promise<SheetDataResult<Model>> {
 
         try {
             const ready = new Promise(async (resolve, reject) => {
-                if (!this.loaded[sheet]) {
+                if (!this.loaded[sheet] || !this.sheets[sheet]) {
                     this.sheets[sheet] = [];
                     await this.doc.useServiceAccountAuth(this.credentials);
                     this.info = await this.doc.getInfo();
