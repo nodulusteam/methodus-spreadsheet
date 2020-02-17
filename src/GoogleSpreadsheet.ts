@@ -17,14 +17,22 @@ const GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets/"
 const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds"];
 
 const REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
+
 export class SheetInfo {
-    public id: string = '';
-    public title: string = '';
-    public worksheets: SpreadsheetWorksheet[] = [];
+    constructor(data: SheetInfo) {
+        this.id = data.id;
+        this.title = data.title;
+        this.worksheets = data.worksheets;
+
+    }
+    public id: string;
+    public title: string;
+    public worksheets: SpreadsheetWorksheet[];
 }
+
+
 export class PagingInfo {
     total: number = 0;
-
 }
 
 export interface Credentials {
@@ -74,15 +82,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         this.setAuthAndDependencies(auth_id);
     }
 
-    // deprecated username/password login method
-    // leaving it here to help notify users why it doesn't work
-    setAuth(username: string, password: string, cb: any) {
-        return cb(new Error('Google has officially deprecated ClientLogin. Please upgrade this module and see the readme for more instrucations'))
-    }
-
     async useServiceAccountAuth(creds: Credentials) {
-
-
         this.jwt_client = new this.auth_client.JWT(creds.client_email, null, creds.private_key, GOOGLE_AUTH_SCOPE, null);
         await this.renewJwtAuth();
     }
@@ -99,15 +99,12 @@ export class GoogleSpreadsheet extends EventEmitter {
                 });
                 resolve()
             });
-
-        })
-
+        });
     }
 
     isAuthActive() {
         return !!this.google_auth;
     }
-
 
     setAuthAndDependencies(auth: any) {
         this.google_auth = auth;
@@ -209,9 +206,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
 
-    // public API methods
     async getInfo(): Promise<SheetInfo> {
-        //https://sheets.googleapis.com/v4/spreadsheets/spreadsheetId?&fields=sheets.properties //fields: 'sheets.properties'
 
         try {
             const response: any = await this.makeFeedRequest([this.ss_key], 'GET', {});
@@ -221,11 +216,11 @@ export class GoogleSpreadsheet extends EventEmitter {
             if (data === true) {
                 throw new Error('No response to getInfo call');
             }
-            const ss_data: SheetInfo = {
+            const ss_data: SheetInfo = new SheetInfo({
                 id: data.spreadsheetId,
                 title: data.properties.title,
                 worksheets: [] as any
-            }
+            });
 
             if (data.sheets) {
                 data.sheets.forEach((ws_data: any) => {
@@ -265,7 +260,9 @@ export class GoogleSpreadsheet extends EventEmitter {
             const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             return data;
         } catch (error) {
+
             if (error.indexOf(`You can't remove all the sheets in a document`) < 0) {
+                console.error(error);
                 throw (error);
             }
         }
@@ -294,13 +291,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                         "properties": {
                             "title": opts.title,
                             "gridProperties": {
-                                // "rowCount": 20,
-                                // "columnCount": 12
-                            },
-                            "tabColor": opts.tabColor || {
-                                "red": 1.0,
-                                "green": 0.3,
-                                "blue": 0.4
+
                             }
                         }
                     }
@@ -313,7 +304,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         const sheet = new SpreadsheetWorksheet(this, data.body.replies[0].addSheet.properties);
         this.worksheets = this.worksheets || [];
         this.worksheets[sheet.title] = sheet;
-        await sheet.setHeaderRow(opts.headers);
+
         return sheet;
     }
 

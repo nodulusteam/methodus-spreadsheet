@@ -6,6 +6,7 @@ const _ = require('lodash');
 import faker from 'faker';
 import { Sheet } from '../Sheet';
 import { SpreadsheetRow } from '../SpreadsheetRow';
+import { SpreadsheetWorksheet } from '../SpreadsheetWorksheet';
 
 class SheetModel {
   email?: string;
@@ -35,15 +36,16 @@ Object.keys(sheet_ids).forEach(function (key) {
     console.log(row.data.email, email, row.data.email === email);
     return row.data.email === email;
   });
-  debugger;
+
   console.log('update', results);
 
   results = await docs['private'].delete('default', results.data[0]);
   console.log('delete', results);
-
-  // docs['private'].info.worksheets.forEach(async (worksheet: SpreadsheetWorksheet) => {
-  //   const removeResult = await docs['private'].doc.removeWorksheet(worksheet.id);
-  // });
+  docs['private'].info?.worksheets.forEach(async (worksheet: SpreadsheetWorksheet, index: number) => {
+    if (index > 0) {
+      const removeResult = await docs['private'].doc.removeWorksheet(worksheet.id);
+    }
+  });
 })()
 
 

@@ -48,7 +48,7 @@ describe('Authentication', () => {
       });
 
 
-      describe('writing', () => {
+      xdescribe('writing', () => {
         // it still fails on the public doc because you always need to auth
         _.each(['public', 'public-read-only', 'private'], (key: string) => {
           test('should fail on a ' + key + ' doc', async () => {
@@ -90,38 +90,14 @@ describe('Authentication', () => {
     });
 
 
-    describe('with auth', () => {
-
-
+    xdescribe('with auth', () => {
       _.each(['public', 'public-read-only', 'private'], (key: string) => {
-        test('getInfo should succeed on a ' + key + ' doc', async () => {
+        xtest('getInfo should succeed on a ' + key + ' doc', async () => {
           await docs[key].useServiceAccountAuth(creds);
           const info = await docs[key].getInfo();
           expect(info).toBeDefined();
         });
-      });
-
-      //     it('reading data succeed on a ' + key + ' doc', function (done) {
-      //       docs[key].getRows(1, function (err, rows) {
-      //         (err == null).should.be.true;
-      //         rows.should.be.an.array;
-      //         done();
-      //       });
-      //     });
-      //   });
-
-      //   _.each(['public', 'private'], function (key) {
-      //     it('writing should succeed on a ' + key + ' doc', function (done) {
-      //       docs[key].addWorksheet(function (err, sheet) {
-      //         (err == null).should.be.true;
-      //         sheet.del(done);
-      //       });
-      //     });
-      //   });
-
-      //   it('writing should fail if user does not have access', async (done) => {
-      //     const sheet = await docs['public-read-only'].addWorksheet();
-      //   });
+      });    
     });
 
   });

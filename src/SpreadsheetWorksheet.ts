@@ -53,22 +53,22 @@ export class SpreadsheetWorksheet {
     }
 
 
-    async setHeaderRow(values: any) {
-        if (!values) return;
-        if (values.length > this.colCount) {
-            throw new Error('Sheet is not large enough to fit ' + values.length + ' columns. Resize the sheet first.');
-        }
+    // async setHeaderRow(values: any) {
+    //     if (!values) return;
+    //     if (values.length > this.colCount) {
+    //         throw new Error('Sheet is not large enough to fit ' + values.length + ' columns. Resize the sheet first.');
+    //     }
 
-        const headerPayload = {
-            "range": `${this.id}!A1:Z1`,
-            "majorDimension": "ROWS",
-            "values": [
-                values,
+    //     const headerPayload = {
+    //         "range": `${this.id}!A1:Z1`,
+    //         "majorDimension": "ROWS",
+    //         "values": [
+    //             values,
 
-            ],
-        }
-        const response: any = await this.spreadsheet.makeFeedRequest([this.spreadsheet.id, 'values', `${this.id}!A1:Z1`], 'PUT', headerPayload);
+    //         ],
+    //     }
+    //     const response: any = await this.spreadsheet.makeFeedRequest([this.spreadsheet.id, 'values', `${this.id}!A1:Z1`], 'PUT', headerPayload);
 
 
-    }
+    // }
 }

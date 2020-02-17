@@ -39,6 +39,14 @@ describe('Authentication', () => {
     const email = faker.internet.email();
     let insertedRow: any;
     let updatedRow: any;
+
+    test('insert into new Sheet', async () => {
+      const results = await docs['private'].insert('test1', { email });     
+      expect(results).toBeDefined();
+    });
+
+
+
     test('insert', async () => {
       const results = await docs['private'].insert('test', { email });
       insertedRow = results;
@@ -61,7 +69,6 @@ describe('Authentication', () => {
 
     test('updateBy', async () => {
 
-
       const updatedResults = await docs['private'].query<SheetModel>('test', (row: SpreadsheetRow<SheetModel>) => row.data.email === insertedRow.email);
       const newEmail = faker.internet.email();
       const results: SheetDataResult<SheetModel> = await docs['private'].updateBy<SheetModel>('test', { email: newEmail },
@@ -69,8 +76,7 @@ describe('Authentication', () => {
           return row.data['email'] === updatedRow.data.email;
         });
 
-
-      if (results.data) {
+      if (results.data.length) {
         expect(results.data[0].email).toBe(newEmail);
       } else {
 
@@ -82,16 +88,31 @@ describe('Authentication', () => {
       const results = await docs['private'].delete('test', insertedRow);
       expect(results).toBeDefined();
     });
-  });
 
-  afterAll(() => {
-    Object.keys(sheet_ids).forEach(async (key) => {
-      const info = docs[key].info;
-      if (info) {
-        info.worksheets.forEach(async (worksheet: SpreadsheetWorksheet) => {
-          const removeResult = await docs[key].doc.removeWorksheet(worksheet.id);
-        });
-      }
+
+
+    test('insertMany', async () => {
+      const results = await docs['private'].insertMany('test', [{ email }, { email }, { email }, { email }]);
+      expect(results).toBeDefined();
+    });
+
+
+    test('deleteMany', async () => {
+      const all = await docs['private'].query('test', undefined, 0, 100, [{ colId: 'keyid', direction: 'asc' }]);
+      const results = await docs['private'].deleteMany('test', all.data.map((row: any) => row.keyid));
+      expect(results).toBeDefined();
+    });
+
+
+
+    test('removeWorksheet', async () => {
+         const info = docs['private'].info;
+        if (info) {
+          for (const worksheet of info.worksheets) {
+            const removeResult = await docs['private'].doc.removeWorksheet(worksheet.id);
+            console.log(removeResult);
+          }
+        }
     });
   });
 });

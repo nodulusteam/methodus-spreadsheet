@@ -18,9 +18,9 @@ export class SpreadsheetRow<Model> {
     }
 
 
-    async save(headerRow: any) {
-        await RowSpreadsheet.updateRow(this.data, headerRow, this.index);
-    }
+    // async save(headerRow: any) {
+    //     await RowSpreadsheet.updateRow(this.data, headerRow, this.index);
+    // }
     async del() {
 
         await RowSpreadsheet.removeRow(this.sheetId, this.index);

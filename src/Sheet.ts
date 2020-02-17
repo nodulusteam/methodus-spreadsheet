@@ -18,7 +18,11 @@ export class SheetDataResult<Model> {
     }
     public info?: PagingInfo;
     public data: Model[];
+}
 
+export class SortRequest {
+    colId: string = '';
+    direction: 'asc' | 'desc' = 'asc';
 }
 
 export class Sheet {
@@ -236,7 +240,6 @@ export class Sheet {
     public async updateBy<Model>(sheet: string, dataObject: Partial<Model>, filter: (row: SpreadsheetRow<Model>) => {}): Promise<SheetDataResult<Model>> {
 
         await this.doc.useServiceAccountAuth(this.credentials);
-        debugger;
         const info = await this.doc.getInfo();
         const [finalObject, existingFields] = await this.handleHeader(dataObject, sheet);
 
@@ -244,9 +247,9 @@ export class Sheet {
         if (row.length > 0) {
             Object.assign(row[0].data, dataObject);
             const updateResult = await this.doc.worksheets[sheet].updateRow<Model>(row[0].index, row[0].data, existingFields);
-            return { data: [updateResult.data] };
+            return new SheetDataResult<Model>([updateResult.data]);
         } else {
-            return { data: [] };
+            return new SheetDataResult<Model>([]);
         }
     }
 
@@ -256,8 +259,8 @@ export class Sheet {
     }
 
 
-    public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {},
-        start: number = 0, end: number = 9, sorts?: any): Promise<SheetDataResult<Model>> {
+    public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {} ,
+        start: number = 0, end: number = 9, sorts?: [SortRequest]): Promise<SheetDataResult<Model>> {
 
         try {
             const ready = new Promise(async (resolve, reject) => {
@@ -292,7 +295,7 @@ export class Sheet {
             let reverse = 1;
             let sortField = 'id';
             if (sorts && sorts.length > 0) {
-                reverse = (sorts[0].sort !== 'asc') ? -1 : 1;
+                reverse = (sorts[0].direction !== 'asc') ? -1 : 1;
                 sortField = sorts[0].colId;
             }
 
