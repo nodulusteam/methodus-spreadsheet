@@ -41,7 +41,7 @@ describe('Authentication', () => {
     let updatedRow: any;
 
     test('insert into new Sheet', async () => {
-      const results = await docs['private'].insert('test1', { email });     
+      const results = await docs['private'].insert('test1', { email });
       expect(results).toBeDefined();
     });
 
@@ -106,13 +106,17 @@ describe('Authentication', () => {
 
 
     test('removeWorksheet', async () => {
-         const info = docs['private'].info;
-        if (info) {
-          for (const worksheet of info.worksheets) {
+      const info = docs['private'].info;
+      if (info) {
+        for (const worksheet of info.worksheets) {
+
+
+          if (worksheet.title !== 'test') {
             const removeResult = await docs['private'].doc.removeWorksheet(worksheet.id);
-            console.log(removeResult);
+            expect(removeResult.result).toBeDefined();
           }
         }
+      }
     });
   });
 });

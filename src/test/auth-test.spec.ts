@@ -48,7 +48,7 @@ describe('Authentication', () => {
       });
 
 
-      xdescribe('writing', () => {
+      describe('writing', () => {
         // it still fails on the public doc because you always need to auth
         _.each(['public', 'public-read-only', 'private'], (key: string) => {
           test('should fail on a ' + key + ' doc', async () => {
@@ -90,15 +90,7 @@ describe('Authentication', () => {
     });
 
 
-    xdescribe('with auth', () => {
-      _.each(['public', 'public-read-only', 'private'], (key: string) => {
-        xtest('getInfo should succeed on a ' + key + ' doc', async () => {
-          await docs[key].useServiceAccountAuth(creds);
-          const info = await docs[key].getInfo();
-          expect(info).toBeDefined();
-        });
-      });    
-    });
+
 
   });
 });

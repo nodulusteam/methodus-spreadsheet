@@ -207,7 +207,6 @@ export class Sheet {
 
         indices.sort((a, b) => (a > b) ? -1 : 1);
 
-        console.log(this.doc.worksheets[sheet].id, indices);
         this.loaded[sheet] = false;
         this.sheets[sheet] = await this.doc.worksheets[sheet].removeRows(this.doc.worksheets[sheet].id, indices);
         this.loaded[sheet] = true;

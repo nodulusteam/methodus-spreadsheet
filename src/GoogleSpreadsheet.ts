@@ -260,7 +260,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             return data;
         } catch (error) {
-
+          
             if (error.indexOf(`You can't remove all the sheets in a document`) < 0) {
                 console.error(error);
                 throw (error);
