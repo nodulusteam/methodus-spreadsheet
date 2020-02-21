@@ -11,7 +11,8 @@ const docs: { [key: string]: Sheet } = {};
 class SheetModel {
   email?: string;
   keyid?: string;
-  fields: any[] = []
+  fields: any[] = [];
+  some?: any;
 }
 
 describe('Authentication', () => {
@@ -59,15 +60,18 @@ describe('Authentication', () => {
 
       test('many', async () => {
         docs['private'].info = undefined;
-        const results = await docs['private'].insertMany('test', [{ email }, { email }, { email }, { email }]);
+        const results = await docs['private'].insertMany<SheetModel>('test', [{ email }, { email }, { email }, { email }]);
+
         expect(results).toBeDefined();
+        expect(results.length).toBe(4);
       });
 
       test('objects', async () => {
         docs['private'].info = undefined;
-        const results = await docs['private'].insert('test', { email, some: undefined, fields: [{ name: 'field1' }, { name: 'field2' }] });
+        const results = await docs['private'].insert<SheetModel>('test', { email, some: undefined, fields: [{ name: 'field1' }, { name: 'field2' }] });
         insertedRow = results;
         expect(results).toBeDefined();
+        expect(results.keyid).toBeDefined();
       });
 
     });
@@ -111,7 +115,7 @@ describe('Authentication', () => {
 
 
     test('remove from private doc', async () => {
-      const results = await docs['private'].delete('test', insertedRow);
+      const results = await docs['private'].delete<SheetModel>('test', insertedRow);
       expect(results).toBeDefined();
     });
 
@@ -121,9 +125,10 @@ describe('Authentication', () => {
 
 
     test('deleteMany', async () => {
-      const all = await docs['private'].query('test', undefined, 0, 100, [{ colId: 'keyid', direction: 'asc' }]);
+      const all = await docs['private'].query<SheetModel>('test', undefined, 0, 100, [{ colId: 'keyid', direction: 'asc' }]);
       const results = await docs['private'].deleteMany('test', all.data.map((row: any) => row.keyid));
       expect(results).toBeDefined();
+      expect(results.length).toBe(all.data.length);
     });
 
 

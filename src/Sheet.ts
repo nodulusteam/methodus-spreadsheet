@@ -168,7 +168,7 @@ export class Sheet {
         return baseObject.data as Partial<Model>[];
     }
 
-    public async delete(sheet: string, dataObject: Partial<{ keyid: string }>) {
+    public async delete<Model>(sheet: string, dataObject: Partial<{ keyid: string }>) :Promise<Model> {
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
 
@@ -189,7 +189,7 @@ export class Sheet {
         return result;
     }
 
-    public async deleteMany(sheet: string, rowKeys: string[]) {
+    public async deleteMany(sheet: string, rowKeys: string[]): Promise<number[]> {
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
 
