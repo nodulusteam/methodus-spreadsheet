@@ -25,6 +25,10 @@ export class SortRequest {
     direction: 'asc' | 'desc' = 'asc';
 }
 
+interface Key {
+    keyid: string;
+}
+
 export class Sheet {
     private sheets: any = {};
     private credentials: any = {};
@@ -38,7 +42,21 @@ export class Sheet {
         this.doc = new GoogleSpreadsheet(sheetid);
 
     }
-    public async handleHeader<Model>(dataObject: Model, sheet: string) {
+    private prepareObject(finalObject: { [key: string]: any } | any) {
+        Object.keys(finalObject).forEach((property) => {
+            if (finalObject[property] !== undefined && finalObject[property] !== null) {
+                if (typeof finalObject[property] === 'object') {
+                    finalObject[property] = JSON.stringify(finalObject[property]);
+                } else {
+                    finalObject[property] = finalObject[property].toString();
+                }
+            }
+        });
+        return finalObject;
+
+    }
+
+    private async handleHeader<Model>(dataObject: Partial<Model>, sheet: string): Promise<{ data: Partial<Model> | Partial<Model>[] | unknown, fields: string[] }> {
         const finalObject: any = {};
         Object.keys(dataObject).forEach((key) => {
             finalObject[key] = (dataObject as any)[key];
@@ -58,12 +76,18 @@ export class Sheet {
                 existingFields.push(key);
             }
         });
-        return [finalObject, existingFields];
+        return {
+            data: finalObject,
+            fields: existingFields
+        };
     }
-    public async insert(sheet: string, dataObject: any) {
+
+    private errorHandler(error: Error, reject: Function) {
+        return reject(new Error(error.message));
+    }
+
+    public async insert<Model>(sheet: string, dataObject: Partial<Model>): Promise<Partial<Model>> {
         // Authenticate with the Google Spreadsheets API.
-
-
         await this.doc.useServiceAccountAuth(this.credentials);
 
         if (!this.info) {
@@ -75,9 +99,6 @@ export class Sheet {
 
                 const newSheet = await this.doc.addWorksheet({
                     title: `${sheet}`,
-                    tabColor: {
-
-                    }
                 });
 
                 this.doc.worksheets[sheet] = new SpreadsheetWorksheet(this.doc, newSheet.data);
@@ -87,35 +108,26 @@ export class Sheet {
             }
         }
 
-        const [finalObject, existingFields] = await this.handleHeader(dataObject, sheet);
 
-        if (existingFields.indexOf('keyid') === -1) {
-            existingFields.push('keyid');
+        const baseObject = await this.handleHeader<Model>(dataObject, sheet);
+
+
+        if (baseObject.fields.indexOf('keyid') === -1) {
+            baseObject.fields.push('keyid');
         }
-        finalObject.keyid = uuidv1();
+        (baseObject.data as Key)['keyid'] = uuidv1();
+        baseObject.data = this.prepareObject(baseObject.data);
 
-        Object.keys(finalObject).forEach((property) => {
-            if (finalObject[property] !== undefined && finalObject[property] !== null) {
-                finalObject[property] = finalObject[property].toString();
-            }
-        });
-
-
-        const insertedRow = await this.doc.worksheets[sheet].addRow(finalObject, existingFields);
+        const insertedRow = await this.doc.worksheets[sheet].addRow(baseObject.data, baseObject.fields);
         this.loaded[sheet] = false;
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows({});
         this.loaded[sheet] = true;
 
-        return finalObject;
+        return baseObject.data as Partial<Model>;
     }
 
-
-
-
-
-    public async insertMany(sheet: string, dataObject: any[]) {
+    public async insertMany<Model>(sheet: string, dataObject: Partial<Model>[]): Promise<Partial<Model>[]> {
         // Authenticate with the Google Spreadsheets API.
-
         await this.doc.useServiceAccountAuth(this.credentials);
 
         if (!this.info) {
@@ -137,35 +149,24 @@ export class Sheet {
 
         }
 
-        let [finalObject, existingFields] = await this.handleHeader(dataObject[0], sheet);
-        finalObject = dataObject;
-        if (existingFields.indexOf('keyid') === -1) {
-            existingFields.push('keyid');
+        const baseObject = await this.handleHeader(dataObject[0], sheet);
+        baseObject.data = dataObject;
+        if (baseObject.fields.indexOf('keyid') === -1) {
+            baseObject.fields.push('keyid');
         }
 
-        finalObject.forEach((row: any) => {
+        (baseObject.data as any[]).forEach((row: any) => {
             row.keyid = uuidv1();
-            Object.keys(row).forEach((property) => {
-                if (row[property] !== undefined && row[property] !== null) {
-                    row[property] = row[property].toString();
-                }
-            });
+            row = this.prepareObject(row);
         });
 
+        const insertedRow = await this.doc.worksheets[sheet].addRows(baseObject.data, baseObject.fields);
 
-
-
-        const insertedRow = await this.doc.worksheets[sheet].addRows(finalObject, existingFields);
-        // this.sheets[sheet].push({ index: this.info.worksheets[sheet].rowCount, data: finalObject });
         this.loaded[sheet] = false;
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows({});
         this.loaded[sheet] = true;
-
-
-        return finalObject;
+        return baseObject.data as Partial<Model>[];
     }
-
-
 
     public async delete(sheet: string, dataObject: Partial<{ keyid: string }>) {
         await this.doc.useServiceAccountAuth(this.credentials);
@@ -187,8 +188,6 @@ export class Sheet {
         this.loaded[sheet] = true;
         return result;
     }
-
-
 
     public async deleteMany(sheet: string, rowKeys: string[]) {
         await this.doc.useServiceAccountAuth(this.credentials);
@@ -213,52 +212,51 @@ export class Sheet {
         return indices;
     }
 
-
-
-    public async update<Model>(sheet: string, dataObject: Partial<Model>) {
+    public async update<Model>(sheet: string, dataObject: Partial<Model | unknown>): Promise<Partial<Model>> {
 
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
-        const [finalObject, existingFields] = await this.handleHeader(dataObject, sheet);
+        const baseObject = await this.handleHeader(dataObject, sheet);
+
 
 
         const row = this.sheets[sheet].filter((rowData: any) => {
             if (rowData.data) {
-                return rowData.data['keyid'] === (dataObject as any)['keyid'];
+                return rowData.data['keyid'] === (dataObject as Key)['keyid'];
             }
             return false;
         });
-        Object.assign(row[0].data, dataObject);
 
-        const result = await this.doc.worksheets[sheet].updateRow(row[0].index, row[0].data, existingFields);
-        return result;
+        if (row.length > 0) {
+            Object.assign(row[0].data, dataObject);
+            baseObject.data = this.prepareObject(row[0].data);
+            const result = await this.doc.worksheets[sheet].updateRow(row[0].index, baseObject.data, baseObject.fields);
+
+            return result.data as Partial<Model>;
+        } else {
+            throw new Error('object not found');
+        }
     }
-
-
 
     public async updateBy<Model>(sheet: string, dataObject: Partial<Model>, filter: (row: SpreadsheetRow<Model>) => {}): Promise<SheetDataResult<Model>> {
 
         await this.doc.useServiceAccountAuth(this.credentials);
         const info = await this.doc.getInfo();
-        const [finalObject, existingFields] = await this.handleHeader(dataObject, sheet);
+        const baseObject = await this.handleHeader(dataObject, sheet);
 
         const row = this.sheets[sheet].filter(filter);
         if (row.length > 0) {
-            Object.assign(row[0].data, dataObject);
-            const updateResult = await this.doc.worksheets[sheet].updateRow<Model>(row[0].index, row[0].data, existingFields);
+            baseObject.data = row[0].data;
+
+            Object.assign(baseObject.data, dataObject);
+            const updateResult = await this.doc.worksheets[sheet].updateRow<Model>(row[0].index, baseObject.data, baseObject.fields);
             return new SheetDataResult<Model>([updateResult.data]);
         } else {
             return new SheetDataResult<Model>([]);
         }
     }
 
-
-    public errorHandler(error: Error, reject: Function) {
-        return reject(new Error(error.message));
-    }
-
-
-    public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {} ,
+    public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {},
         start: number = 0, end: number = 9, sorts?: [SortRequest]): Promise<SheetDataResult<Model>> {
 
         try {
