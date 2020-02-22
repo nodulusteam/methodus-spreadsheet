@@ -354,7 +354,6 @@ export class GoogleSpreadsheet extends EventEmitter {
 
                 entries.forEach((row_data: Dictionary, rowIndex: number) => {
                     if (rowIndex > 0) {
-                        console.log('>>>>>>>>>>', objectTemplate);
                         const clone = JSON.parse(JSON.stringify(objectTemplate));
                         entries[0].forEach((key: string, index: number) => {
                             clone[key] = row_data[index];

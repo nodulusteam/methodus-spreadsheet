@@ -15,3 +15,13 @@ import { Sheet, getSheet, SheetDataResult } from '@methodus/google-spreadsheet';
 const sheet:Sheet = getSheet(sheetId, {client_email: 'test@gmail.com',  private_key: 'XXXXXXXXXXXX'});
 
 ```
+
+Get filtered rows
+```typescript
+function filter(row: SpreadsheetRow<Model>){
+    return row.data.email === email
+}
+
+const result = sheet.query<Model>('Sheet1', filter, start, end, sorts);
+
+```
