@@ -11,6 +11,7 @@ import { Dictionary } from './functions';
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Z'];
 
 
+type WebResponse = { result: any, body: any };
 
 
 const GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets/";
@@ -117,7 +118,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
     // This method is used internally to make all requests
-    async makeFeedRequest(url_params: any, method: string, query_or_data: any): Promise<{ result: any, body: string } | boolean | undefined> {
+    async makeFeedRequest(url_params: any, method: string, query_or_data: any): Promise<WebResponse | boolean | undefined> {
 
         let url = '';
         const headers: any = {};
@@ -256,7 +257,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
 
         try {
-            const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
+            const data: WebResponse = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest) as WebResponse;
             return data;
         } catch (error) {
 
@@ -265,6 +266,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                 throw (error);
             }
         }
+        return;
 
     }
 
@@ -299,8 +301,8 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
 
 
-        const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
-        const sheet = new SpreadsheetWorksheet(this, data.body.replies[0].addSheet.properties);
+        const workSheetdata: WebResponse = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest) as WebResponse;
+        const sheet = new SpreadsheetWorksheet(this, workSheetdata.body.replies[0].addSheet.properties);
         this.worksheets = this.worksheets || [];
         this.worksheets[sheet.title] = sheet;
 
@@ -355,6 +357,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                         const clone = JSON.parse(JSON.stringify(objectTemplate));
                         entries[0].forEach((key: string, index: number) => {
                             clone[key] = row_data[index];
+                            this.parseObjects(clone, key);
                         });
                         rows.push(new SpreadsheetRow(this, clone, worksheet_id, rowIndex));
                     }
@@ -366,6 +369,20 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
 
         return rows;
+    }
+
+    parseObjects(clone: Dictionary, key: string) {
+        try {
+            if (clone[key]) {
+                if (clone[key].indexOf('[') === 0 || clone[key].indexOf('{') === 0) {
+                    clone[key] = JSON.parse(clone[key]);
+                }
+            }
+
+        } catch (error) {
+            log(error);
+        }
+
     }
 
     async addRow<Model>(worksheet_id: string, data: Partial<Model>, headerRow: string[]) {

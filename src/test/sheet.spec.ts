@@ -26,7 +26,8 @@ describe('Authentication', () => {
       jest.setTimeout(1000 * 30)
       for (const sheet of Object.values(docs)) {
         try {
-          const results = await sheet.query('test');
+          const results = await sheet.query<Sheet>('test');
+          expect(results.info?.total).toBeDefined();
           expect(results).toBeDefined();
 
         } catch (error) {
@@ -141,7 +142,7 @@ describe('Authentication', () => {
         for (const worksheet of info.worksheets) {
           if (worksheet.title !== 'test') {
             const removeResult = await docs['private'].doc.removeWorksheet(worksheet.id);
-            expect(removeResult.result).toBeDefined();
+            expect(removeResult!.result).toBeDefined();
           }
         }
       }

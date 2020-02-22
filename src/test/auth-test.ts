@@ -52,6 +52,7 @@ Object.keys(sheet_ids).forEach(function (key) {
       const removeResult = await docs['private'].doc.removeWorksheet(worksheet.id);
       return removeResult;
     }
+    return;
   });
 })()
 
