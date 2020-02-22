@@ -25,3 +25,42 @@ function filter(row: SpreadsheetRow<Model>){
 const result = sheet.query<Model>('Sheet1', filter, start, end, sorts);
 
 ```
+
+
+Insert 
+```typescript
+ 
+const data = new Model();
+const result = sheet.insert<Model>('Sheet1',data);
+
+const result = sheet.insertMany<Model>('Sheet1',[data]);
+
+```
+
+Update 
+```typescript
+ 
+const data = new Model();
+data.keyid = keyvalue;
+const result = sheet.update<Model>('Sheet1',data);
+
+function filter(row: SpreadsheetRow<Model>){
+    return row.data.email === email
+}
+
+const result = sheet.updateBy<Model>('Sheet1',filter, data);
+
+```
+
+
+
+Delete 
+```typescript
+ 
+const data = new Model();
+data.keyid = keyvalue;
+const result = sheet.delete<Model>('Sheet1',data);
+
+const result = sheet.deleteMany<Model>('Sheet1',[keyvalue,keyvalue,keyvalue]);
+
+```
