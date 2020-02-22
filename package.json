@@ -1,11 +1,15 @@
 {
-  "author": "nodulusteam",
+  "author": "NodulusTeam",
   "name": "@methodus/google-spreadsheet",
   "description": "Google Spreadsheets V4 Data API -- simple interface to read/write rows/cells, manage sheets",
   "version": "1.0.10",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
-  "license": "Unlicense",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nodulusteam/methodus-spreadsheet"
+  },
   "keywords": [
     "methodus",
     "google spreadsheets",
