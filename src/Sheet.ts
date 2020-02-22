@@ -169,15 +169,15 @@ export class Sheet {
 
         (baseObject.data as any[]).forEach((row: any) => {
             row.keyid = uuidv1();
-            row = this.prepareObject(row);
+            this.prepareObject(row);
         });
 
-        const insertedRow = await this.doc.worksheets[sheet].addRows(baseObject.data as Partial<Model>[], baseObject.fields);
+        const insertedRow = await this.doc.worksheets[sheet].addRows(baseObject.data, baseObject.fields);
         log(insertedRow);
         this.loaded[sheet] = false;
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
         this.loaded[sheet] = true;
-        return baseObject.data as Partial<Model>[];
+        return baseObject.data;
     }
 
     public async delete<Model>(sheet: string, dataObject: Partial<{ keyid: string }>): Promise<Model> {
@@ -212,7 +212,9 @@ export class Sheet {
         const indices: number[] = [];
         rowKeys.forEach((key) => {
             this.sheets[sheet].forEach((rowData: any, index: number) => {
-                rowData.data['keyid'] === key ? indices.push(index + 1) : null;
+                if (rowData.data['keyid'] === key) {
+                    indices.push(index + 1)
+                }
             });
         });
 

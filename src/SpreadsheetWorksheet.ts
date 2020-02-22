@@ -1,4 +1,3 @@
-import * as  _ from 'lodash';
 
 import { SpreadsheetRow } from './SpreadsheetRow';
 import { GoogleSpreadsheet } from './GoogleSpreadsheet';

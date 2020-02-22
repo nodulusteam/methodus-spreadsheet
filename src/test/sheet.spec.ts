@@ -4,7 +4,7 @@ import { sheet_ids } from './config';
 import creds from './service-account-creds';
 import { SpreadsheetRow } from '../SpreadsheetRow';
 
- 
+
 const docs: { [key: string]: Sheet } = {};
 
 class SheetModel {
@@ -86,10 +86,10 @@ describe('Authentication', () => {
       });
 
       test('objects', async () => {
-        const email = faker.internet.email();
-        updatedRow = await docs['private'].update('test', { keyid: insertedRow.keyid, email, some: undefined, fields: [{ name: 'field1' }, { name: 'field2' }] });
+        const email2 = faker.internet.email();
+        updatedRow = await docs['private'].update('test', { keyid: insertedRow.keyid, email: email2, some: undefined, fields: [{ name: 'field1' }, { name: 'field2' }] });
         const results = await docs['private'].query('test');
-        expect(updatedRow.email).toBe(email);
+        expect(updatedRow.email).toBe(email2);
         return results;
       });
 

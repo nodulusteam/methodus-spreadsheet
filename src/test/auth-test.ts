@@ -8,7 +8,7 @@ import { SpreadsheetWorksheet } from '../SpreadsheetWorksheet';
 class SheetModel {
   email?: string;
   fields: any[] = [];
-  keyid: string='';
+  keyid: string = '';
 }
 
 const docs: { [key: string]: Sheet } = {};
@@ -46,7 +46,8 @@ Object.keys(sheet_ids).forEach(function (key) {
 
   results = await docs['private'].delete('default', queryResults.data[0]);
   console.log('delete', results);
-  docs['private'].info?.worksheets.forEach(async (worksheet: SpreadsheetWorksheet, index: number) => {
+  const worksheets = docs['private'].info!.worksheets;
+  worksheets.forEach(async (worksheet: SpreadsheetWorksheet, index: number) => {
     if (index > 0) {
       const removeResult = await docs['private'].doc.removeWorksheet(worksheet.id);
       return removeResult;

@@ -133,7 +133,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         if (this.auth_mode === 'jwt') {
             // check if jwt token is expired
             if (this.google_auth && this.google_auth.expires > +new Date()) {
-
+                log('not expired yet');
             } else {
                 await this.renewJwtAuth();
             }
@@ -178,7 +178,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                 headers: headers,
                 gzip: this.options.gzip !== undefined ? this.options.gzip : true,
                 body: method == 'POST' || method == 'PUT' ? bufferBody : null
-            });
+            }).promise();
             const body: any = response.body;
             if (body) {
                 const bodyObject: any = JSON.parse(body);
@@ -236,6 +236,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             return ss_data;
 
         } catch (error) {
+            log(error);
             throw error;
         }
 
@@ -244,7 +245,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     // NOTE: worksheet IDs start at 1
     async removeWorksheet(sheetid: any) {
-        const request = {
+        const webRequest = {
             "requests": [
                 {
                     "deleteSheet": {
@@ -255,7 +256,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
 
         try {
-            const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             return data;
         } catch (error) {
 
@@ -282,7 +283,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             opts.colCount = opts.headers.length;
         }
 
-        const request = {
+        const webRequest = {
             "requests": [
                 {
                     "addSheet": {
@@ -298,7 +299,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
 
 
-        const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+        const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
         const sheet = new SpreadsheetWorksheet(this, data.body.replies[0].addSheet.properties);
         this.worksheets = this.worksheets || [];
         this.worksheets[sheet.title] = sheet;
@@ -369,7 +370,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     async addRow<Model>(worksheet_id: string, data: Partial<Model>, headerRow: string[]) {
 
-        const request = {
+        const webRequest = {
             "requests": [
                 {
                     "updateCells": {
@@ -415,7 +416,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('insert', { sheetId: worksheet_id });
             log(response);
 
@@ -433,7 +434,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     async addRows<Model>(worksheet_id: string, data: Partial<Model>[], headerRow: string[]) {
 
-        const request = {
+        const webRequest = {
             "requests": [
                 {
                     "updateCells": {
@@ -480,7 +481,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('insert', { sheetId: worksheet_id });
             log(response);
 
@@ -498,7 +499,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
     async updateRow<Model>(worksheet_id: string, data: Partial<Model>, headerRow: string[], index: number): Promise<SpreadsheetRow<Model>> {
-        const request = {
+        const webRequest = {
             "requests": [
                 {
                     "updateCells": {
@@ -552,7 +553,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('update', { sheetId: worksheet_id });
             log(response);
 
@@ -573,7 +574,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             }
         });
 
-        const request = {
+        const webRequest = {
             "requests": [
                 {
                     "deleteRange": {
@@ -595,7 +596,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('delete', { sheetId: worksheet_id });
             return response;
 
@@ -616,7 +617,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             }
         });
 
-        const request = {
+        const webRequest = {
             "requests":
                 indices.map((index) => {
                     return {
@@ -638,7 +639,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
+            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('delete', { sheetId: worksheet_id });
             return response;
         } catch (error) {
@@ -646,7 +647,4 @@ export class GoogleSpreadsheet extends EventEmitter {
             throw (new Error(error));
         }
     }
-
-
-
-};
+}
