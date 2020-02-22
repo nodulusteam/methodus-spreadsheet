@@ -88,7 +88,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
     async renewJwtAuth() {
-        return await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             this.auth_mode = 'jwt';
             this.jwt_client.authorize((err: Error, token: any) => {
                 if (err) return reject(err);
@@ -132,11 +132,11 @@ export class GoogleSpreadsheet extends EventEmitter {
 
         if (this.auth_mode === 'jwt') {
             // check if jwt token is expired
-            if (this.google_auth && this.google_auth!.expires > +new Date()) {
+            if (this.google_auth && this.google_auth.expires > +new Date()) {
 
             } else {
                 await this.renewJwtAuth();
-            };
+            }
 
             if (this.google_auth) {
                 if (this.google_auth.type === 'Bearer') {
@@ -145,7 +145,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                     headers['Authorization'] = "GoogleLogin auth=" + this.google_auth;
                 }
             }
-        };
+        }
 
 
         headers['Gdata-Version'] = '4.0';
@@ -155,8 +155,6 @@ export class GoogleSpreadsheet extends EventEmitter {
 
         if (method == 'PUT' || method == 'POST' && url.indexOf('/batch') != -1) {
             headers['If-Match'] = '*';// v1();//'*';
-
-
         }
 
         if (method == 'GET' && query_or_data) {
@@ -260,7 +258,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             const data: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             return data;
         } catch (error) {
-          
+
             if (error.indexOf(`You can't remove all the sheets in a document`) < 0) {
                 console.error(error);
                 throw (error);
@@ -419,7 +417,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             this.emit('insert', { sheetId: worksheet_id });
-            log(response);          
+            log(response);
 
             const row = new SpreadsheetRow(this, data, worksheet_id, 0);
             return row;
@@ -484,9 +482,9 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             this.emit('insert', { sheetId: worksheet_id });
-            log(response);         
+            log(response);
 
-             
+
 
             const row = new SpreadsheetRow(this, data, worksheet_id, 0);
             return row;
@@ -556,7 +554,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             this.emit('update', { sheetId: worksheet_id });
-            log(response);            
+            log(response);
 
             const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
             return row;
@@ -599,7 +597,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             this.emit('delete', { sheetId: worksheet_id });
-            return response;    
+            return response;
 
         } catch (error) {
             console.error('Capured error at addRow', error);

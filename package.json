@@ -40,6 +40,7 @@
     "typescript": "^3.6.4"
   },
   "scripts": {
+    "sonar": "sonar-scanner.bat -Dsonar.projectKey=nodulusteam_methodus-spreadsheet -Dsonar.organization=nodulusteam-github -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=e01e7adc2647251c0651a3bab28de27b479b4432",
     "build": "rimraf lib && tsc",
     "test": "npm run build && jest --verbose"
   }
