@@ -57,6 +57,7 @@ export class Sheet {
         Object.keys(finalObject).forEach((property) => {
             if (finalObject[property] !== undefined && finalObject[property] !== null) {
                 if (typeof finalObject[property] === 'object') {
+
                     finalObject[property] = JSON.stringify(finalObject[property]);
                 } else {
                     finalObject[property] = finalObject[property].toString();
@@ -316,26 +317,29 @@ export class Sheet {
                 info: { total: 0 }, data: []
             }
 
+            let filteredData: SpreadsheetRow<Model>[];
             if (query) {
                 if (this.sheets[sheet]) {
 
-                    const filteredRows = this.sheets[sheet].filter(query);
-                    resultObject.info.total = filteredRows.length;
+                    filteredData = this.sheets[sheet].filter(query);
+                    resultObject.info.total = filteredData.length;
 
-                    resultObject.data = filteredRows.sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
-                        return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? -1 * reverse : 1 * reverse
-                    }).map((d: SpreadsheetRow<Model>) => d.data);
+
+                }
+                else {
+                    filteredData = [];
                 }
             } else {
                 resultObject.info.total = this.sheets[sheet].length;
-                resultObject.data = this.sheets[sheet].sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
-                    return ((a.data as any)[sortField] > (b.data as any)[sortField]) ? 1 * reverse : -1 * reverse
-                }).map((d: SpreadsheetRow<Model>) => d.data);
-            }
+                filteredData = this.sheets[sheet];
 
+            }
+            resultObject.data = filteredData.sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
+                return ((a.data as Dictionary)[sortField] > (b.data as Dictionary)[sortField]) ? -1 * reverse : 1 * reverse
+            }).map((d: SpreadsheetRow<Model>) => d.data);
 
             resultObject.data = resultObject.data.slice(start, end);
-            
+
             return resultObject;
 
         } catch (error) {

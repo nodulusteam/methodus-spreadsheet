@@ -10,8 +10,23 @@ const docs: { [key: string]: Sheet } = {};
 class SheetModel {
   email?: string;
   keyid?: string;
+  dateentered?: Date;
   fields: any[] = [];
   some?: any;
+  status?: string;
+}
+
+
+function createRow(): SheetModel {
+
+  return {
+    keyid: faker.random.alphaNumeric(10),
+    email: faker.internet.email(),
+    dateentered: faker.date.recent(5),
+    status: faker.random.word(),
+    fields: []
+  }
+
 }
 
 describe('Authentication', () => {
@@ -37,22 +52,26 @@ describe('Authentication', () => {
     });
   });
 
+
+
+
   describe('writing private doc', () => {
-    const email = faker.internet.email();
-    let insertedRow: any;
+    let insertedRow: any = createRow();
     let updatedRow: Partial<SheetModel>;
     describe('insert', () => {
       test('into new Sheet', async () => {
-        const results = await docs['private'].insert<SheetModel>('test1', { email });
-        expect(results.email).toBe(email);
+        const results = await docs['private'].insert<SheetModel>('test1', insertedRow);
+        expect(results.email).toBe(insertedRow.email);
         expect(results.keyid).toBeDefined();
         expect(results).toBeDefined();
       });
 
       test('simple', async () => {
         docs['private'].info = undefined;
-        const results = await docs['private'].insert<SheetModel>('test', { email });
-        expect(results.email).toBe(email);
+        const data = createRow();
+
+        const results = await docs['private'].insert<SheetModel>('test', data);
+        expect(results.email).toBe(data.email);
         expect(results.keyid).toBeDefined();
         insertedRow = results;
         expect(results).toBeDefined();
@@ -60,15 +79,22 @@ describe('Authentication', () => {
 
       test('many', async () => {
         docs['private'].info = undefined;
-        const results = await docs['private'].insertMany<SheetModel>('test', [{ email }, { email }, { email }, { email }]);
+        const arr: SheetModel[] = [];
+        for (let i = 0; i < 10; i++) {
+          arr.push(createRow())
+        }
+        const results = await docs['private'].insertMany<SheetModel>('test', arr);
 
         expect(results).toBeDefined();
-        expect(results.length).toBe(4);
+        expect(results.length).toBe(10);
       });
 
       test('objects', async () => {
         docs['private'].info = undefined;
-        const results = await docs['private'].insert<SheetModel>('test', { email, some: undefined, fields: [{ name: 'field1' }, { name: 'field2' }] });
+        const row = createRow();
+        row.fields = [{ name: 'field1' }, { name: 'field2' }];
+        row.some = undefined;
+        const results = await docs['private'].insert<SheetModel>('test', row);
         insertedRow = results;
         expect(results).toBeDefined();
         expect(results.keyid).toBeDefined();
@@ -112,6 +138,19 @@ describe('Authentication', () => {
           expect(true).toBeFalsy();
         }
         return updatedResults;
+      });
+    });
+
+
+
+    describe('test sorting', () => {
+      test('sort asc', async () => {
+        const all = await docs['private'].query<SheetModel>('test', undefined, 0, 100, [{ colId: 'email', direction: 'asc' }]);
+        expect(all).toBeDefined();
+      });
+      test('sort desc', async () => {
+        const all = await docs['private'].query<SheetModel>('test', undefined, 0, 100, [{ colId: 'email', direction: 'desc' }]);
+        expect(all).toBeDefined();
       });
     });
 
