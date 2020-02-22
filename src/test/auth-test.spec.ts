@@ -1,5 +1,4 @@
-const path = require('path');
-import { GoogleSpreadsheet } from '../GoogleSpreadsheet';
+import { GoogleSpreadsheet, Credentials } from '../GoogleSpreadsheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
 
@@ -7,16 +6,13 @@ const _ = require('lodash');
 
 
 
-const docs: any = {};
+const docs: { [key: string]: GoogleSpreadsheet } = {};
+
 Object.keys(sheet_ids).forEach(function (key) {
   docs[key] = new GoogleSpreadsheet(sheet_ids[key]);
 });
 
-
-function getSheetName() { return 'test sheet' + (+new Date()); }
-
 describe('Authentication', () => {
-
   beforeAll(() => {
     Object.values(docs).forEach(async (doc: any) => {
       await doc.useServiceAccountAuth(creds);
@@ -34,7 +30,7 @@ describe('Authentication', () => {
       });
 
       test('should fail on a private doc', async () => {
-        return docs['private'].getRows('test', {}).catch((err: string) => {
+        return docs['private'].getRows('test').catch((err: string) => {
           expect(err).toContain('The caller does not have permission');
         });
 
@@ -54,11 +50,12 @@ describe('Authentication', () => {
           test('should fail on a ' + key + ' doc', async () => {
             try {
               const sheet = await docs[key].addWorksheet('test');
-
+              return sheet;
             } catch (err) {
 
               expect(err).toContain('The caller does not have permission');
             }
+            return true;
           });
         });
       });
@@ -68,7 +65,7 @@ describe('Authentication', () => {
     describe('authentication', () => {
       test('should fail if the token is empty', async () => {
         try {
-          await docs['private'].useServiceAccountAuth({});
+          await docs['private'].useServiceAccountAuth({} as Credentials);
         } catch (err) {
           expect(err).toBeDefined();
         }
@@ -80,6 +77,7 @@ describe('Authentication', () => {
         let errorExist = false
         try {
           const auth = await docs['private'].useServiceAccountAuth(creds);
+          return auth;
         } catch (error) {
           errorExist = true;
         }

@@ -1,9 +1,10 @@
 import * as  _ from 'lodash';
-import { SpreadsheetRow } from './SpreadsheetRow';
 
-// Classes
+import { SpreadsheetRow } from './SpreadsheetRow';
+import { GoogleSpreadsheet } from './GoogleSpreadsheet';
+
 export class SpreadsheetWorksheet {
-    spreadsheet: any;
+    spreadsheet: GoogleSpreadsheet;
     data: any;
     url: string = '';
     id: string = '';
@@ -21,12 +22,12 @@ export class SpreadsheetWorksheet {
         this.colCount = this.data.gridProperties.columnCount;
     }
 
-    async getHeaderRow(opts: any) {
-        return await this.spreadsheet.getHeaderRow(this.title, opts);
+    async getHeaderRow<Model>() {
+        return await this.spreadsheet.getHeaderRow<Model>(this.title);
     }
 
-    async getRows(opts: any) {
-        return await this.spreadsheet.getRows(this.title, opts);
+    async getRows() {
+        return await this.spreadsheet.getRows(this.title);
     }
 
 
@@ -34,10 +35,10 @@ export class SpreadsheetWorksheet {
         return await this.spreadsheet.updateRow(this.data.sheetId, data, headerRow, index);
     }
 
-    async addRow(data: any, headerRow: any[]) {
+    async addRow<Model>(data: Partial<Model>, headerRow: string[]) {
         return await this.spreadsheet.addRow(this.data.sheetId, data, headerRow);
     }
-    async addRows(data: any, headerRow: any[]) {
+    async addRows<Model>(data:  Partial<Model>[], headerRow: string[]) {
         return await this.spreadsheet.addRows(this.data.sheetId, data, headerRow);
     }
 
@@ -48,7 +49,7 @@ export class SpreadsheetWorksheet {
         await this.spreadsheet.removeRow(sheetId, rangeIndex);
     }
 
-    async removeRows(sheetId: string, indices: number[]) {
+    async removeRows(sheetId: number, indices: number[]) {
         return await this.spreadsheet.removeRows(sheetId, indices);
     }
 

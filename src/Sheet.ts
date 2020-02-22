@@ -1,9 +1,12 @@
 import uuidv1 from 'uuid/v1';
+const log = require('debug')('methodus:spreadsheet');
 import { GoogleSpreadsheet, Credentials, SheetInfo, PagingInfo } from './GoogleSpreadsheet';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { SpreadsheetRow } from './SpreadsheetRow';
+import { Dictionary } from './functions';
 
 const SheetsCache: { [sheetId: string]: Sheet } = {};
+
 
 export function getSheet(sheetId: string, creds: Credentials) {
     if (!SheetsCache[sheetId]) {
@@ -29,9 +32,17 @@ interface Key {
     keyid: string;
 }
 
+function keyid(data: unknown): string {
+    return (data as Key).keyid;
+}
+function setKeyid(data: unknown, key: string): void {
+    (data as Key).keyid = key;
+}
+
+
 export class Sheet {
     private sheets: any = {};
-    private credentials: any = {};
+    private credentials?: Credentials;
     public info?: SheetInfo;
     public doc: GoogleSpreadsheet;
     private intervals: { [key: string]: any } = {};
@@ -56,17 +67,17 @@ export class Sheet {
 
     }
 
-    private async handleHeader<Model>(dataObject: Partial<Model>, sheet: string): Promise<{ data: Partial<Model> | Partial<Model>[] | unknown, fields: string[] }> {
-        const finalObject: any = {};
-        Object.keys(dataObject).forEach((key) => {
-            finalObject[key] = (dataObject as any)[key];
+    private async handleHeader<Model>(dataObject: Partial<Model>, sheet: string): Promise<{ data: Partial<Model> | Partial<Model>[], fields: string[] }> {
+        const finalObject: Partial<Model> = {};
+        Object.keys(dataObject as Dictionary).forEach((key: string) => {
+            (finalObject as Dictionary)[key] = (dataObject as Dictionary)[key];
         });
 
         let existingFields: string[] = [];
 
         try {
-            const headerRow = await this.doc.worksheets[sheet].getHeaderRow({});
-            existingFields = headerRow.data || [];
+            const headerRow = await this.doc.worksheets[sheet].getHeaderRow<Model>();
+            existingFields = headerRow.data as any || [];
         } catch (error) {
 
         }
@@ -82,13 +93,13 @@ export class Sheet {
         };
     }
 
-    private errorHandler(error: Error, reject: Function) {
-        return reject(new Error(error.message));
-    }
+    // private errorHandler(error: Error, reject: Function) {
+    //     return reject(new Error(error.message));
+    // }
 
     public async insert<Model>(sheet: string, dataObject: Partial<Model>): Promise<Partial<Model>> {
         // Authenticate with the Google Spreadsheets API.
-        await this.doc.useServiceAccountAuth(this.credentials);
+        await this.doc.useServiceAccountAuth(this.credentials!);
 
         if (!this.info) {
             this.info = await this.doc.getInfo();
@@ -115,20 +126,21 @@ export class Sheet {
         if (baseObject.fields.indexOf('keyid') === -1) {
             baseObject.fields.push('keyid');
         }
-        (baseObject.data as Key)['keyid'] = uuidv1();
+        setKeyid(baseObject.data, uuidv1());
+
         baseObject.data = this.prepareObject(baseObject.data);
 
-        const insertedRow = await this.doc.worksheets[sheet].addRow(baseObject.data, baseObject.fields);
+        const insertedRow = await this.doc.worksheets[sheet].addRow<Model>(baseObject.data as Partial<Model>, baseObject.fields);
         this.loaded[sheet] = false;
-        this.sheets[sheet] = await this.doc.worksheets[sheet].getRows({});
+        this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
         this.loaded[sheet] = true;
 
-        return baseObject.data as Partial<Model>;
+        return insertedRow.data as Partial<Model>;
     }
 
     public async insertMany<Model>(sheet: string, dataObject: Partial<Model>[]): Promise<Partial<Model>[]> {
         // Authenticate with the Google Spreadsheets API.
-        await this.doc.useServiceAccountAuth(this.credentials);
+        await this.doc.useServiceAccountAuth(this.credentials!);
 
         if (!this.info) {
             this.info = await this.doc.getInfo();
@@ -160,20 +172,20 @@ export class Sheet {
             row = this.prepareObject(row);
         });
 
-        const insertedRow = await this.doc.worksheets[sheet].addRows(baseObject.data, baseObject.fields);
-
+        const insertedRow = await this.doc.worksheets[sheet].addRows(baseObject.data as Partial<Model>[], baseObject.fields);
+        log(insertedRow);
         this.loaded[sheet] = false;
-        this.sheets[sheet] = await this.doc.worksheets[sheet].getRows({});
+        this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
         this.loaded[sheet] = true;
         return baseObject.data as Partial<Model>[];
     }
 
-    public async delete<Model>(sheet: string, dataObject: Partial<{ keyid: string }>) :Promise<Model> {
-        await this.doc.useServiceAccountAuth(this.credentials);
-        const info = await this.doc.getInfo();
+    public async delete<Model>(sheet: string, dataObject: Partial<{ keyid: string }>): Promise<Model> {
+        await this.doc.useServiceAccountAuth(this.credentials!);
+        await this.doc.getInfo();
 
         //this.errorHandler(err, reject);
-        const data = await this.doc.worksheets[sheet].getRows({});
+        const data = await this.doc.worksheets[sheet].getRows();
         this.sheets[sheet] = data;
 
         // Authenticate with the Google Spreadsheets API.
@@ -184,17 +196,17 @@ export class Sheet {
         await row[0].del();
         const result = row[0].data;
         this.loaded[sheet] = false;
-        this.sheets[sheet] = await this.doc.worksheets[sheet].getRows({});
+        this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
         this.loaded[sheet] = true;
         return result;
     }
 
     public async deleteMany(sheet: string, rowKeys: string[]): Promise<number[]> {
-        await this.doc.useServiceAccountAuth(this.credentials);
-        const info = await this.doc.getInfo();
+        await this.doc.useServiceAccountAuth(this.credentials!);
+        await this.doc.getInfo();
 
         //this.errorHandler(err, reject);
-        const data = await this.doc.worksheets[sheet].getRows({});
+        const data = await this.doc.worksheets[sheet].getRows();
         this.sheets[sheet] = data;
 
         const indices: number[] = [];
@@ -207,22 +219,22 @@ export class Sheet {
         indices.sort((a, b) => (a > b) ? -1 : 1);
 
         this.loaded[sheet] = false;
-        this.sheets[sheet] = await this.doc.worksheets[sheet].removeRows(this.doc.worksheets[sheet].id, indices);
+        this.sheets[sheet] = await this.doc.worksheets[sheet].removeRows(this.doc.worksheets[sheet].id as any, indices);
         this.loaded[sheet] = true;
         return indices;
     }
 
-    public async update<Model>(sheet: string, dataObject: Partial<Model | unknown>): Promise<Partial<Model>> {
+    public async update<Model>(sheet: string, dataObject: Partial<Model>): Promise<Partial<Model>> {
 
-        await this.doc.useServiceAccountAuth(this.credentials);
-        const info = await this.doc.getInfo();
+        await this.doc.useServiceAccountAuth(this.credentials!);
+        await this.doc.getInfo();
         const baseObject = await this.handleHeader(dataObject, sheet);
 
 
 
-        const row = this.sheets[sheet].filter((rowData: any) => {
+        const row = this.sheets[sheet].filter((rowData: SpreadsheetRow<Model>) => {
             if (rowData.data) {
-                return rowData.data['keyid'] === (dataObject as Key)['keyid'];
+                return keyid(rowData.data) === keyid(dataObject);
             }
             return false;
         });
@@ -240,8 +252,8 @@ export class Sheet {
 
     public async updateBy<Model>(sheet: string, dataObject: Partial<Model>, filter: (row: SpreadsheetRow<Model>) => {}): Promise<SheetDataResult<Model>> {
 
-        await this.doc.useServiceAccountAuth(this.credentials);
-        const info = await this.doc.getInfo();
+        await this.doc.useServiceAccountAuth(this.credentials!);
+        await this.doc.getInfo();
         const baseObject = await this.handleHeader(dataObject, sheet);
 
         const row = this.sheets[sheet].filter(filter);
@@ -263,14 +275,14 @@ export class Sheet {
             const ready = new Promise(async (resolve, reject) => {
                 if (!this.loaded[sheet] || !this.sheets[sheet]) {
                     this.sheets[sheet] = [];
-                    await this.doc.useServiceAccountAuth(this.credentials);
+                    await this.doc.useServiceAccountAuth(this.credentials!);
                     this.info = await this.doc.getInfo();
 
                     if (!this.doc.worksheets[sheet]) {
                         return reject({ info: this.info, data: [] });
                     }
 
-                    this.sheets[sheet] = await this.doc.worksheets[sheet].getRows({});
+                    this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
                     this.loaded[sheet] = true;
                     return resolve();
                 } else {

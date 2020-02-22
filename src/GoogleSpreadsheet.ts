@@ -1,13 +1,13 @@
+const log = require('debug')('methodus:spreadsheet');
 import request from 'request-promise';
 import * as  http from 'http';
 import * as  querystring from 'querystring';
 import * as  _ from 'lodash';
 const GoogleAuth = require('google-auth-library');
 import { SpreadsheetRow } from './SpreadsheetRow';
-import { forceArray, xmlSafeColumnName, xmlSafeValue } from './functions';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
-import v1 from 'uuid/v1';
 import { EventEmitter } from 'events';
+import { Dictionary } from './functions';
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Z'];
 
 
@@ -16,7 +16,7 @@ const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'
 const GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets/";
 const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds"];
 
-const REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
+// const REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
 
 export class SheetInfo {
     constructor(data: SheetInfo) {
@@ -317,24 +317,24 @@ export class GoogleSpreadsheet extends EventEmitter {
     // }
 
 
-    async getHeaderRow(worksheet_id: string, opts: any) {
+    async getHeaderRow<Model>(worksheet_id: string) {
         // the first row is used as titles/keys and is not included
         const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_id}!A1:Z1`], 'GET', {});
-        const data = response.result;
+        // const data = response.result;
         const entries = response.body.values;
         if (entries) {
-            return new SpreadsheetRow(this, entries[0], worksheet_id, 0);
+            return new SpreadsheetRow<Model>(this, entries[0], worksheet_id, 0);
         } else {
-            return new SpreadsheetRow(this, [], worksheet_id, 0);
+            return new SpreadsheetRow<Model>(this, [], worksheet_id, 0);
         }
     }
 
     map: any = {};
 
-    async getRows(worksheet_title: string, opts: any) {
-        const query: any = {}
-        const map: any = {};
-        const rows: any = [];
+    async getRows(worksheet_title: string) {
+        const query: Dictionary = {}
+        const map: Dictionary = {};
+        const rows: Dictionary[] = [];
         try {
             const worksheet_id = this.worksheets[worksheet_title] ? this.worksheets[worksheet_title].id : worksheet_title;
             // const worksheetName = this.info.worksheets[worksheet_id].title;
@@ -351,7 +351,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                     objectTemplate[key] = null;
                 });
 
-                entries.forEach((row_data: any, rowIndex: number) => {
+                entries.forEach((row_data: Dictionary, rowIndex: number) => {
                     if (rowIndex > 0) {
                         const clone = JSON.parse(JSON.stringify(objectTemplate));
                         entries[0].forEach((key: string, index: number) => {
@@ -369,7 +369,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         return rows;
     }
 
-    async addRow(worksheet_id: string, data: any, headerRow: string[]) {
+    async addRow<Model>(worksheet_id: string, data: Partial<Model>, headerRow: string[]) {
 
         const request = {
             "requests": [
@@ -404,7 +404,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                             "values": headerRow.map((field: string) => {
                                 return {
                                     "userEnteredValue": {
-                                        "stringValue": data[field]
+                                        "stringValue": (data as Dictionary)[field]
                                     }
                                 }
                             })
@@ -419,9 +419,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             this.emit('insert', { sheetId: worksheet_id });
-
-
-            const result: any = response;
+            log(response);          
 
             const row = new SpreadsheetRow(this, data, worksheet_id, 0);
             return row;
@@ -435,7 +433,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
 
-    async addRows(worksheet_id: string, data: any, headerRow: string[]) {
+    async addRows<Model>(worksheet_id: string, data: Partial<Model>[], headerRow: string[]) {
 
         const request = {
             "requests": [
@@ -486,9 +484,9 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             this.emit('insert', { sheetId: worksheet_id });
+            log(response);         
 
-
-            const result: any = response;
+             
 
             const row = new SpreadsheetRow(this, data, worksheet_id, 0);
             return row;
@@ -501,7 +499,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
 
-    async updateRow<Model>(worksheet_id: string, data: any, headerRow: string[], index: number): Promise<SpreadsheetRow<Model>> {
+    async updateRow<Model>(worksheet_id: string, data: Partial<Model>, headerRow: string[], index: number): Promise<SpreadsheetRow<Model>> {
         const request = {
             "requests": [
                 {
@@ -543,7 +541,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                             "values": headerRow.map((field: string) => {
                                 return {
                                     "userEnteredValue": {
-                                        "stringValue": data[field]
+                                        "stringValue": (data as Dictionary)[field]
                                     }
                                 }
                             })
@@ -558,9 +556,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             this.emit('update', { sheetId: worksheet_id });
-
-
-            const result: any = response;
+            log(response);            
 
             const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
             return row;
@@ -573,7 +569,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     async removeRow(worksheet_id: number, index: number) {
 
         //find index for sheet
-        this.info.worksheets.forEach((sheet: any, index: number) => {
+        this.info.worksheets.forEach((sheet: any) => {
             if (sheet.id === worksheet_id) {
                 worksheet_id = sheet.data.sheetId;
             }
@@ -603,7 +599,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             this.emit('delete', { sheetId: worksheet_id });
-            const result: any = response;
+            return response;    
 
         } catch (error) {
             console.error('Capured error at addRow', error);
@@ -615,9 +611,8 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
     async removeRows(worksheet_id: number, indices: number[]) {
-
         //find index for sheet
-        this.info.worksheets.forEach((sheet: any, index: number) => {
+        this.info.worksheets.forEach((sheet: any) => {
             if (sheet.id === worksheet_id) {
                 worksheet_id = sheet.data.sheetId;
             }
@@ -647,8 +642,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', request);
             this.emit('delete', { sheetId: worksheet_id });
-            const result: any = response;
-
+            return response;
         } catch (error) {
             console.error('Capured error at addRow', error);
             throw (new Error(error));

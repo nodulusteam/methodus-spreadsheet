@@ -1,4 +1,7 @@
 
+
+export type Dictionary = { [key: string]: any };
+
 export function forceArray(val: any) {
     if (Array.isArray(val)) return val;
     if (!val) return [];

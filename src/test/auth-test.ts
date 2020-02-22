@@ -1,8 +1,5 @@
-const path = require('path');
-
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
-const _ = require('lodash');
 import faker from 'faker';
 import { Sheet } from '../Sheet';
 import { SpreadsheetRow } from '../SpreadsheetRow';
@@ -45,13 +42,14 @@ Object.keys(sheet_ids).forEach(function (key) {
     return row.data.email === email;
   });
 
-  console.log('updateBy', results);
+  console.log('updateBy', updateByResults);
 
   results = await docs['private'].delete('default', queryResults.data[0]);
   console.log('delete', results);
   docs['private'].info?.worksheets.forEach(async (worksheet: SpreadsheetWorksheet, index: number) => {
     if (index > 0) {
       const removeResult = await docs['private'].doc.removeWorksheet(worksheet.id);
+      return removeResult;
     }
   });
 })()

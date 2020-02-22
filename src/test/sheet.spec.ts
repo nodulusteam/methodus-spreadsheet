@@ -1,11 +1,10 @@
-const path = require('path');
 import faker from 'faker';
 import { Sheet, getSheet, SheetDataResult } from '../Sheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
 import { SpreadsheetRow } from '../SpreadsheetRow';
 
-const _ = require('lodash');
+ 
 const docs: { [key: string]: Sheet } = {};
 
 class SheetModel {
@@ -83,6 +82,7 @@ describe('Authentication', () => {
         updatedRow = await docs['private'].update('test', insertedRow);
         const results = await docs['private'].query('test');
         expect(updatedRow.email).toBe(insertedRow.email);
+        return results;
       });
 
       test('objects', async () => {
@@ -90,6 +90,7 @@ describe('Authentication', () => {
         updatedRow = await docs['private'].update('test', { keyid: insertedRow.keyid, email, some: undefined, fields: [{ name: 'field1' }, { name: 'field2' }] });
         const results = await docs['private'].query('test');
         expect(updatedRow.email).toBe(email);
+        return results;
       });
 
 
@@ -109,6 +110,7 @@ describe('Authentication', () => {
 
           expect(true).toBeFalsy();
         }
+        return updatedResults;
       });
     });
 
