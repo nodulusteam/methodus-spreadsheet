@@ -335,6 +335,7 @@ export class Sheet {
 
 
             resultObject.data = resultObject.data.slice(start, end);
+            
             return resultObject;
 
         } catch (error) {
