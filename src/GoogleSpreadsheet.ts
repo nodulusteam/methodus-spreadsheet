@@ -399,13 +399,11 @@ export class GoogleSpreadsheet extends EventEmitter {
 
             var a = reISO.exec(value);
             if (a) {
-                console.log('is a date', value);
                 return new Date(value);
 
             }
             a = reMsAjax.exec(value);
             if (a) {
-                console.log('is a date', a[1]);
                 var b = a[1].split(/[-+,.]/);
                 return new Date(b[0] ? +b[0] : 0 - +b[1]);
             }

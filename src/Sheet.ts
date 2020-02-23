@@ -317,30 +317,23 @@ export class Sheet {
                 info: { total: 0 }, data: []
             }
 
-            //let filteredData: SpreadsheetRow<Model>[];
             function sort(arr: any[]) {
                 return arr.sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
-                    return ((a.data as Dictionary)[sortField] > (b.data as Dictionary)[sortField]) ? -1 * reverse : 1 * reverse
+                    return ((a.data as Dictionary)[sortField] < (b.data as Dictionary)[sortField]) ? -1 * reverse : 1 * reverse
                 })
             }
             if (query) {
                 if (this.sheets[sheet]) {
                     resultObject.data = sort(this.sheets[sheet]).filter(query).map((d: SpreadsheetRow<Model>) => d.data);
-
-                    //  filteredData = this.sheets[sheet]
                     resultObject.info.total = resultObject.data.length;
                 }
 
             } else {
                 resultObject.data = sort(this.sheets[sheet]).map((d: SpreadsheetRow<Model>) => d.data);
                 resultObject.info.total = this.sheets[sheet].length;
-                // filteredData = this.sheets[sheet];
-
             }
 
-
             resultObject.data = resultObject.data.slice(start, end);
-
             return resultObject;
 
         } catch (error) {
