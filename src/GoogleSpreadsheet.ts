@@ -133,9 +133,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
         if (this.auth_mode === 'jwt') {
             // check if jwt token is expired
-            if (this.google_auth && this.google_auth.expires > +new Date()) {
-                log('not expired yet');
-            } else {
+            if (!this.google_auth || this.google_auth.expires < +new Date()) {
                 await this.renewJwtAuth();
             }
 
@@ -376,7 +374,11 @@ export class GoogleSpreadsheet extends EventEmitter {
             if (clone[key]) {
                 if (clone[key].indexOf('[') === 0 || clone[key].indexOf('{') === 0) {
                     clone[key] = JSON.parse(clone[key]);
+                } else {
+                    clone[key] = this.JsonDateParse(clone[key]);
                 }
+
+
             }
 
         } catch (error) {
@@ -385,6 +387,32 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     }
 
+    JsonDateParse(value: string) {
+        const reISO = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*))(?:Z|(\+|-)([\d|:]*))?$/;
+        const reMsAjax = /^\/Date\((d|-|.*)\)[\/|\\]$/;
+
+        if (typeof value === 'string') {
+
+            if (value.indexOf('"') === 0 && value.indexOf('"', 1) === value.length - 1) {
+                value = value.replace(/"/g, '');                
+            }
+
+            var a = reISO.exec(value);
+            if (a) {
+                console.log('is a date', value);
+                return new Date(value);
+
+            }
+            a = reMsAjax.exec(value);
+            if (a) {
+                console.log('is a date', a[1]);
+                var b = a[1].split(/[-+,.]/);
+                return new Date(b[0] ? +b[0] : 0 - +b[1]);
+            }
+        }
+        return value;
+
+    }
     async addRow<Model>(worksheet_id: string, data: Partial<Model>, headerRow: string[]) {
 
         const webRequest = {
@@ -435,14 +463,16 @@ export class GoogleSpreadsheet extends EventEmitter {
         try {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('insert', { sheetId: worksheet_id });
-            log(response);
+            if (response) {
+                const row = new SpreadsheetRow(this, data, worksheet_id, 0);
+                return row;
+            }
 
-            const row = new SpreadsheetRow(this, data, worksheet_id, 0);
-            return row;
         } catch (error) {
             console.error('Capured error at addRow', error);
             throw (new Error(error));
         }
+        return null;
     }
 
 
@@ -498,9 +528,9 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
+            await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('insert', { sheetId: worksheet_id });
-            log(response);
+
 
 
 
@@ -570,9 +600,9 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
+            await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('update', { sheetId: worksheet_id });
-            log(response);
+
 
             const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
             return row;

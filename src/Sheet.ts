@@ -7,9 +7,9 @@ import { Dictionary } from './functions';
 
 const SheetsCache: { [sheetId: string]: Sheet } = {};
 
-
 export function getSheet(sheetId: string, creds: Credentials) {
     if (!SheetsCache[sheetId]) {
+        log('sheetId', sheetId)
         SheetsCache[sheetId] = new Sheet(sheetId, creds);
     }
     return SheetsCache[sheetId];
@@ -136,7 +136,7 @@ export class Sheet {
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
         this.loaded[sheet] = true;
 
-        return insertedRow.data as Partial<Model>;
+        return insertedRow!.data as Partial<Model>;
     }
 
     public async insertMany<Model>(sheet: string, dataObject: Partial<Model>[]): Promise<Partial<Model>[]> {
@@ -173,8 +173,8 @@ export class Sheet {
             this.prepareObject(row);
         });
 
-        const insertedRow = await this.doc.worksheets[sheet].addRows(baseObject.data, baseObject.fields);
-        log(insertedRow);
+        await this.doc.worksheets[sheet].addRows(baseObject.data, baseObject.fields);
+
         this.loaded[sheet] = false;
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
         this.loaded[sheet] = true;
@@ -317,26 +317,27 @@ export class Sheet {
                 info: { total: 0 }, data: []
             }
 
-            let filteredData: SpreadsheetRow<Model>[];
+            //let filteredData: SpreadsheetRow<Model>[];
+            function sort(arr: any[]) {
+                return arr.sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
+                    return ((a.data as Dictionary)[sortField] > (b.data as Dictionary)[sortField]) ? -1 * reverse : 1 * reverse
+                })
+            }
             if (query) {
                 if (this.sheets[sheet]) {
+                    resultObject.data = sort(this.sheets[sheet]).filter(query).map((d: SpreadsheetRow<Model>) => d.data);
 
-                    filteredData = this.sheets[sheet].filter(query);
-                    resultObject.info.total = filteredData.length;
-
-
+                    //  filteredData = this.sheets[sheet]
+                    resultObject.info.total = resultObject.data.length;
                 }
-                else {
-                    filteredData = [];
-                }
+
             } else {
+                resultObject.data = sort(this.sheets[sheet]).map((d: SpreadsheetRow<Model>) => d.data);
                 resultObject.info.total = this.sheets[sheet].length;
-                filteredData = this.sheets[sheet];
+                // filteredData = this.sheets[sheet];
 
             }
-            resultObject.data = filteredData.sort((a: SpreadsheetRow<Model>, b: SpreadsheetRow<Model>) => {
-                return ((a.data as Dictionary)[sortField] > (b.data as Dictionary)[sortField]) ? -1 * reverse : 1 * reverse
-            }).map((d: SpreadsheetRow<Model>) => d.data);
+
 
             resultObject.data = resultObject.data.slice(start, end);
 
