@@ -305,7 +305,7 @@ export class Sheet {
             });
 
             let reverse = 1;
-            let sortField = 'id';
+            let sortField = 'keyid';
             if (sorts && sorts.length > 0) {
                 reverse = (sorts[0].direction !== 'asc') ? -1 : 1;
                 sortField = sorts[0].colId;
