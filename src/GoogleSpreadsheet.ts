@@ -11,8 +11,8 @@ import { Dictionary } from './functions';
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Z'];
 
 
-type WebResponse = { result: any, body: any };
-
+export type WebResponse = { result: any, body: any };
+type ResponsePromise = Promise<WebResponse | undefined | boolean>;
 
 const GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets/";
 const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds"];
@@ -118,7 +118,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
     // This method is used internally to make all requests
-    async makeFeedRequest(url_params: any, method: string, query_or_data: any): Promise<WebResponse | boolean | undefined> {
+    async makeFeedRequest(url_params: any, method: string, query_or_data: any): ResponsePromise {
 
         let url = '';
         const headers: any = {};
@@ -243,7 +243,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
     // NOTE: worksheet IDs start at 1
-    async removeWorksheet(sheetid: any) {
+    async removeWorksheet(sheetid: any): ResponsePromise {
         const webRequest = {
             "requests": [
                 {
@@ -268,7 +268,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     }
 
-    async addWorksheet(opts: any) {
+    async addWorksheet(opts: any): Promise<SpreadsheetWorksheet> {
         // make opts optional
         const defaults = {
             title: 'Worksheet ' + (+new Date()),  // need a unique title
@@ -316,7 +316,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     // }
 
 
-    async getHeaderRow<Model>(worksheet_id: string) {
+    async getHeaderRow<Model>(worksheet_id: string): Promise<SpreadsheetRow<Model>> {
         // the first row is used as titles/keys and is not included
         const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_id}!A1:Z1`], 'GET', {});
         // const data = response.result;
@@ -330,7 +330,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     map: any = {};
 
-    async getRows(worksheet_title: string) {
+    async getRows(worksheet_title: string): Promise<Dictionary[]> {
         const query: Dictionary = {}
         const map: Dictionary = {};
         const rows: Dictionary[] = [];
@@ -369,7 +369,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         return rows;
     }
 
-    parseObjects(clone: Dictionary, key: string) {
+    parseObjects(clone: Dictionary, key: string): void {
         try {
             if (clone[key]) {
                 if (clone[key].indexOf('[') === 0 || clone[key].indexOf('{') === 0) {
@@ -394,7 +394,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         if (typeof value === 'string') {
 
             if (value.indexOf('"') === 0 && value.indexOf('"', 1) === value.length - 1) {
-                value = value.replace(/"/g, '');                
+                value = value.replace(/"/g, '');
             }
 
             var a = reISO.exec(value);
@@ -411,7 +411,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         return value;
 
     }
-    async addRow<Model>(worksheet_id: string, data: Partial<Model>, headerRow: string[]) {
+    async addRow<Model>(worksheet_id: string, data: Partial<Model>, headerRow: string[]): Promise<SpreadsheetRow<Model> | null> {
 
         const webRequest = {
             "requests": [
@@ -462,7 +462,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('insert', { sheetId: worksheet_id });
             if (response) {
-                const row = new SpreadsheetRow(this, data, worksheet_id, 0);
+                const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
                 return row;
             }
 
@@ -477,7 +477,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
 
-    async addRows<Model>(worksheet_id: string, data: Partial<Model>[], headerRow: string[]) {
+    async addRows<Model>(worksheet_id: string, data: Partial<Model>[], headerRow: string[]): Promise<SpreadsheetRow<Model>> {
 
         const webRequest = {
             "requests": [
@@ -532,7 +532,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
 
-            const row = new SpreadsheetRow(this, data, worksheet_id, 0);
+            const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
             return row;
         } catch (error) {
             console.error('Capured error at addRow', error);
@@ -610,7 +610,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
     }
 
-    async removeRow(worksheet_id: number, index: number) {
+    async removeRow(worksheet_id: number, index: number): ResponsePromise {
 
         //find index for sheet
         this.info.worksheets.forEach((sheet: any) => {
@@ -641,7 +641,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
+            const response: WebResponse | undefined | boolean = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
             this.emit('delete', { sheetId: worksheet_id });
             return response;
 
@@ -654,7 +654,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
 
-    async removeRows(worksheet_id: number, indices: number[]) {
+    async removeRows(worksheet_id: number, indices: number[]): ResponsePromise {
         //find index for sheet
         this.info.worksheets.forEach((sheet: any) => {
             if (sheet.id === worksheet_id) {
