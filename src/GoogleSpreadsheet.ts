@@ -330,10 +330,10 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     map: any = {};
 
-    async getRows(worksheet_title: string): Promise<Dictionary[]> {
+    async getRows<Model>(worksheet_title: string): Promise<SpreadsheetRow<Model>[]> {
         const query: Dictionary = {}
         const map: Dictionary = {};
-        const rows: Dictionary[] = [];
+        const rows: SpreadsheetRow<Model>[] = [];
         try {
             const worksheet_id = this.worksheets[worksheet_title] ? this.worksheets[worksheet_title].id : worksheet_title;
             // const worksheetName = this.info.worksheets[worksheet_id].title;
@@ -357,7 +357,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                             clone[key] = row_data[index];
                             this.parseObjects(clone, key);
                         });
-                        rows.push(new SpreadsheetRow(this, clone, worksheet_id, rowIndex));
+                        rows.push(new SpreadsheetRow<Model>(this, clone, worksheet_id, rowIndex));
                     }
                 });
             }

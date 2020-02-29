@@ -1,6 +1,6 @@
 
 
-export type Dictionary = { [key: string]: any };
+export type Dictionary<T = any> = { [key: string]: T };
 
 export function forceArray(val: any) {
     if (Array.isArray(val)) return val;

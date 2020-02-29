@@ -1,6 +1,6 @@
 let RowSpreadsheet: any = null;
 
-export class SpreadsheetRow<Model> {
+export class SpreadsheetRow<Model=any> {
     data: Model;
     index: number;
     sheetId: string;

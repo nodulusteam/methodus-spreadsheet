@@ -9,7 +9,6 @@ export class SpreadsheetWorksheet {
     id: string = '';
     title: string = '';
     rowCount: number = 0;
-    _links: any;
     colCount: number = 0;
 
     constructor(spreadsheet: any, data: any) {

@@ -41,12 +41,12 @@ function setKeyid(data: unknown, key: string): void {
 
 
 export class Sheet {
-    private sheets: any = {};
+    private sheets: Dictionary<SpreadsheetRow[]> = {};
     private credentials?: Credentials;
     public info?: SheetInfo;
     public doc: GoogleSpreadsheet;
-    private intervals: { [key: string]: any } = {};
-    private loaded: { [key: string]: boolean } = {};
+    private intervals: Dictionary = {};
+    private loaded: Dictionary<boolean> = {};
 
     constructor(sheetid: string, credentials?: Credentials) {
         this.credentials = credentials;
@@ -70,7 +70,7 @@ export class Sheet {
 
     private async handleHeader<Model>(dataObject: Partial<Model>, sheet: string): Promise<{ data: Partial<Model> | Partial<Model>[], fields: string[] }> {
         const finalObject: Partial<Model> = {};
-        Object.keys(dataObject as Dictionary).forEach((key: string) => {
+        Object.keys(dataObject as Dictionary<any>).forEach((key: string) => {
             (finalObject as Dictionary)[key] = (dataObject as Dictionary)[key];
         });
 
@@ -222,8 +222,8 @@ export class Sheet {
         indices.sort((a, b) => (a > b) ? -1 : 1);
 
         this.loaded[sheet] = false;
-        this.sheets[sheet] = await this.doc.worksheets[sheet].removeRows(this.doc.worksheets[sheet].id as any, indices);
-        this.loaded[sheet] = true;
+        await this.doc.worksheets[sheet].removeRows(this.doc.worksheets[sheet].id as any, indices);
+        // this.loaded[sheet] = true;
         return indices;
     }
 
@@ -272,7 +272,7 @@ export class Sheet {
     }
 
     public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {},
-        start: number = 0, end: number = 9, sorts?: [SortRequest]): Promise<SheetDataResult<Model>> {
+        start: number = 0, end: number = 9, sorts?: SortRequest[]): Promise<SheetDataResult<Model>> {
 
         try {
             const ready = new Promise(async (resolve, reject) => {
