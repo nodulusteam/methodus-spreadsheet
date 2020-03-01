@@ -41,17 +41,15 @@ Object.keys(sheet_ids).forEach(function (key) {
   for (let i = 0; i < 10; i++) {
     arr.push(createRow())
   }
+
   const manyResults = await docs['private'].insertMany<SheetModel>('test', arr);
-
   console.log('manyResults', manyResults);
-
-
-  const email = faker.internet.email();
-  let results = await docs['private'].insert('default', { email });
+  const newRow = createRow();
+  let results = await docs['private'].insert('default', newRow);
   console.log('inserted', results);
 
   const queryResults = await docs['private'].query<SheetModel>('default', (row: SpreadsheetRow<SheetModel>) => {
-    return row.data['email'] === email
+    return row.data['email'] === newRow.email
   });
 
   console.log('query', queryResults.data);
@@ -65,8 +63,8 @@ Object.keys(sheet_ids).forEach(function (key) {
   console.log('update', results);
 
   const updateByResults = await docs['private'].updateBy<SheetModel>('default', { email: faker.internet.email() }, (row: SpreadsheetRow<SheetModel>) => {
-    console.log(row.data.email, email, row.data.email === email);
-    return row.data.email === email;
+    console.log(row.data.email, updatedObject.email, row.data.email === updatedObject.email);
+    return row.data.email === updatedObject.email;
   });
 
   console.log('updateBy', updateByResults);

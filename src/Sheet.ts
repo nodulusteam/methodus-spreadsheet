@@ -3,7 +3,7 @@ const log = require('debug')('methodus:spreadsheet');
 import { GoogleSpreadsheet, Credentials, SheetInfo, PagingInfo } from './GoogleSpreadsheet';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { SpreadsheetRow } from './SpreadsheetRow';
-import { Dictionary } from './functions';
+import { Dictionary, prepareObject, parseObject } from './functions';
 
 const SheetsCache: { [sheetId: string]: Sheet } = {};
 
@@ -15,7 +15,7 @@ export function getSheet(sheetId: string, creds: Credentials) {
     return SheetsCache[sheetId];
 }
 
-export class SheetDataResult<Model> {
+export class SheetDataResult<Model = any> {
     constructor(data: Model[], ) {
         this.data = data;
     }
@@ -53,20 +53,7 @@ export class Sheet {
         this.doc = new GoogleSpreadsheet(sheetid);
 
     }
-    private prepareObject(finalObject: { [key: string]: any } | any) {
-        Object.keys(finalObject).forEach((property) => {
-            if (finalObject[property] !== undefined && finalObject[property] !== null) {
-                if (typeof finalObject[property] === 'object') {
 
-                    finalObject[property] = JSON.stringify(finalObject[property]);
-                } else {
-                    finalObject[property] = finalObject[property].toString();
-                }
-            }
-        });
-        return finalObject;
-
-    }
 
     private async handleHeader<Model>(dataObject: Partial<Model>, sheet: string): Promise<{ data: Partial<Model> | Partial<Model>[], fields: string[] }> {
         const finalObject: Partial<Model> = {};
@@ -128,15 +115,14 @@ export class Sheet {
             baseObject.fields.push('keyid');
         }
         setKeyid(baseObject.data, uuidv1());
-
-        baseObject.data = this.prepareObject(baseObject.data);
+        baseObject.data = prepareObject(baseObject.data);
 
         const insertedRow = await this.doc.worksheets[sheet].addRow<Model>(baseObject.data as Partial<Model>, baseObject.fields);
         this.loaded[sheet] = false;
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
         this.loaded[sheet] = true;
-
-        return insertedRow!.data as Partial<Model>;
+        parseObject(insertedRow!.data);
+        return insertedRow!.data;
     }
 
     public async insertMany<Model>(sheet: string, dataObject: Partial<Model>[]): Promise<Partial<Model>[]> {
@@ -168,13 +154,16 @@ export class Sheet {
             baseObject.fields.push('keyid');
         }
 
-        (baseObject.data as any[]).forEach((row: any) => {
+        baseObject.data.forEach((row: any) => {
             row.keyid = uuidv1();
-            this.prepareObject(row);
+            prepareObject(row);
         });
 
         await this.doc.worksheets[sheet].addRows(baseObject.data, baseObject.fields);
 
+        baseObject.data.forEach((row: any) => {
+            parseObject(row);
+        });
         this.loaded[sheet] = false;
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
         this.loaded[sheet] = true;
@@ -244,7 +233,7 @@ export class Sheet {
 
         if (row.length > 0) {
             Object.assign(row[0].data, dataObject);
-            baseObject.data = this.prepareObject(row[0].data);
+            baseObject.data = prepareObject(row[0].data);
             const result = await this.doc.worksheets[sheet].updateRow(row[0].index, baseObject.data, baseObject.fields);
 
             return result.data as Partial<Model>;

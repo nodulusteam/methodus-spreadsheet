@@ -64,6 +64,7 @@ describe('Authentication', () => {
         const results = await docs['private'].insert<SheetModel>('test1', insertedRow);
         expect(results.email).toBe(insertedRow.email);
         expect(results.keyid).toBeDefined();
+        expect(results.dateentered?.getTime()).toBeDefined();
         expect(results).toBeDefined();
       });
 
@@ -73,6 +74,7 @@ describe('Authentication', () => {
 
         const results = await docs['private'].insert<SheetModel>('test', data);
         expect(results.email).toBe(data.email);
+        expect(results.dateentered?.getTime()).toBeDefined();
         expect(results.keyid).toBeDefined();
         insertedRow = results;
         expect(results).toBeDefined();
@@ -85,7 +87,7 @@ describe('Authentication', () => {
           arr.push(createRow())
         }
         const results = await docs['private'].insertMany<SheetModel>('test', arr);
-
+        expect(results[0].dateentered?.getTime()).toBeDefined();
         expect(results).toBeDefined();
         expect(results.length).toBe(10);
       });
