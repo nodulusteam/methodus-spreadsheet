@@ -22,16 +22,14 @@
         "google sheets"
     ],
     "dependencies": {
-        "@methodus/platform-rest": "^5.0.14",
-        "@methodus/server": "^5.0.26",
-        "google-auth-library": "^0.10.0",
-        "lodash": "^4.17.15",
+        "@methodus/platform-rest": "^5.0.16",
+        "@methodus/server": "^5.0.27",
+        "google-auth-library": "^6.0.0",
         "uuid": "^3.3.3"
     },
     "devDependencies": {
         "@types/faker": "^4.1.9",
         "@types/jest": "^24.0.21",
-        "@types/lodash": "^4.14.144",
         "@types/node": "^12.11.7",
         "@types/uuid": "^3.4.5",
         "faker": "^4.1.0",

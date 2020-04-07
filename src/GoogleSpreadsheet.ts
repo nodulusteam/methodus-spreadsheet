@@ -1,8 +1,8 @@
 const log = require('debug')('methodus:spreadsheet');
 // import * as  http from 'http';
 // import * as  querystring from 'querystring';
-import * as  _ from 'lodash';
-const GoogleAuth = require('google-auth-library');
+// import * as  _ from 'lodash';
+import { GoogleAuth, JWTInput, JWT, UserRefreshClient } from 'google-auth-library';
 import { SpreadsheetRow } from './SpreadsheetRow';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { EventEmitter } from 'events';
@@ -35,7 +35,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     projection = 'values';
     auth_mode = 'anonymous';
     auth_client = new GoogleAuth();
-    jwt_client: any;
+    jwt_client?: JWT | UserRefreshClient;
     options: any = {};
 
     ss_key: any;
@@ -51,7 +51,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         super();
         this.ss_key = ss_key;
 
-        this.auth_client = new GoogleAuth();
+        this.auth_client = new GoogleAuth({ scopes: 'https://www.googleapis.com/auth/spreadsheets' });
         this.options = options || {};
         // auth_id may be null
         this.setAuthAndDependencies(auth_id);
@@ -71,23 +71,21 @@ export class GoogleSpreadsheet extends EventEmitter {
     }
 
     async useServiceAccountAuth(creds: Credentials) {
-        this.jwt_client = new this.auth_client.JWT(creds.client_email, null, creds.private_key, GOOGLE_AUTH_SCOPE, null);
+        this.jwt_client = this.auth_client.fromJSON({
+            client_email: creds.client_email,
+            private_key: creds.private_key,
+            GOOGLE_AUTH_SCOPE: GOOGLE_AUTH_SCOPE,
+        } as JWTInput);
         await this.renewJwtAuth();
     }
 
     async renewJwtAuth() {
-        return new Promise((resolve, reject) => {
-
-            this.auth_mode = 'jwt';
-            this.jwt_client.authorize((err: Error, token: any) => {
-                if (err) return reject(err);
-                this.setAuthToken({
-                    type: token.token_type,
-                    value: token.access_token,
-                    expires: token.expiry_date
-                });
-                resolve()
-            });
+        this.auth_mode = 'jwt';
+        const credentials = await (this.jwt_client as JWT).authorize();
+        this.setAuthToken({
+            type: credentials.token_type,
+            value: credentials.access_token,
+            expires: credentials.expiry_date
         });
     }
 
@@ -272,7 +270,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             colCount: 20
         };
 
-        opts = _.extend({}, defaults, opts);
+        opts = Object.assign({}, defaults, opts);
 
         // if column headers are set, make sure the sheet is big enough for them
         if (opts.headers && opts.headers.length > opts.colCount) {
@@ -299,7 +297,6 @@ export class GoogleSpreadsheet extends EventEmitter {
         const response = await serviceContract.batchUpdate(this.ss_key, webRequest)
         if (response.result) {
             const workSheetdata: any = response.result;
-            console.log(workSheetdata);
             const sheet = new SpreadsheetWorksheet(this, workSheetdata.replies[0].addSheet.properties);
             this.worksheets = this.worksheets || [];
             this.worksheets[sheet.title] = sheet;

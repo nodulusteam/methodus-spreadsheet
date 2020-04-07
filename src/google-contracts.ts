@@ -1,6 +1,7 @@
 import { MethodConfig, Method, Param, Query, Auth, AuthType, MethodResult, Body } from '@methodus/server';
 import { Verbs } from '@methodus/platform-rest';
 import { SheetInfo, WebResponse } from './interfaces';
+import { JWT } from 'google-auth-library';
 //const GoogleAuth = require('google-auth-library');
 
 
@@ -72,17 +73,12 @@ export class GoogleSheetContract {
     visibility?: string;
     jwt_client: any;
     async renewJwtAuth() {
-        return new Promise((resolve, reject) => {
-            this.auth_mode = 'jwt';
-            this.jwt_client.authorize((err: Error, token: any) => {
-                if (err) return reject(err);
-                this.setAuthToken({
-                    type: token.token_type,
-                    value: token.access_token,
-                    expires: token.expiry_date
-                });
-                resolve()
-            });
+        this.auth_mode = 'jwt';
+        const credentials = await (this.jwt_client as JWT).authorize();
+        this.setAuthToken({
+            type: credentials.token_type,
+            value: credentials.access_token,
+            expires: credentials.expiry_date
         });
     }
 
