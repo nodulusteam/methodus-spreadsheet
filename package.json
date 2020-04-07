@@ -1,51 +1,49 @@
 {
-  "author": "NodulusTeam",
-  "name": "@methodus/google-spreadsheet",
-  "description": "Google Spreadsheets V4 Data API -- simple interface to read/write rows/cells, manage sheets",
-  "version": "1.0.15",
-  "main": "./lib/index.js",
-  "typings": "./lib/index.d.ts",
-  "license": "BSD-3-Clause",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nodulusteam/methodus-spreadsheet"
-  },
-  "keywords": [
-    "methodus",
-    "google spreadsheets",
-    "google",
-    "spreadsheet",
-    "spreadsheets",
-    "sheets",
-    "gdata",
-    "api",
-    "google sheets"
-  ],
-  "dependencies": {
-    "google-auth-library": "^0.10.0",
-    "lodash": "^4.17.15",
-    "request": "^2.69.0",
-    "request-promise": "^4.2.4",
-    "uuid": "^3.3.3"
-  },
-  "devDependencies": {
-    "@types/faker": "^4.1.9",
-    "faker": "^4.1.0",
-    "@types/jest": "^24.0.21",
-    "@types/lodash": "^4.14.144",
-    "@types/node": "^12.11.7",
-    "@types/request": "^2.48.3",
-    "@types/request-promise": "^4.1.44",
-    "@types/uuid": "^3.4.5",
-    "jest": "^24.9.0",
-    "rimraf": "^3.0.0",
-    "ts-jest": "^24.1.0",
-    "ts-node": "^8.4.1",
-    "typescript": "^3.6.4"
-  },
-  "scripts": {
-    "sonar": "sonar-scanner.bat -Dsonar.projectKey=nodulusteam_methodus-spreadsheet -Dsonar.organization=nodulusteam-github -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=e01e7adc2647251c0651a3bab28de27b479b4432",
-    "build": "rimraf lib && tsc",
-    "test": "npm run build && jest --verbose"
-  }
+    "author": "NodulusTeam",
+    "name": "@methodus/google-spreadsheet",
+    "description": "Google Spreadsheets V4 Data API -- simple interface to read/write rows/cells, manage sheets",
+    "version": "1.0.15",
+    "main": "./lib/index.js",
+    "typings": "./lib/index.d.ts",
+    "license": "BSD-3-Clause",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/nodulusteam/methodus-spreadsheet"
+    },
+    "keywords": [
+        "methodus",
+        "google spreadsheets",
+        "google",
+        "spreadsheet",
+        "spreadsheets",
+        "sheets",
+        "gdata",
+        "api",
+        "google sheets"
+    ],
+    "dependencies": {
+        "@methodus/platform-rest": "^5.0.14",
+        "@methodus/server": "^5.0.26",
+        "google-auth-library": "^0.10.0",
+        "lodash": "^4.17.15",
+        "uuid": "^3.3.3"
+    },
+    "devDependencies": {
+        "@types/faker": "^4.1.9",
+        "@types/jest": "^24.0.21",
+        "@types/lodash": "^4.14.144",
+        "@types/node": "^12.11.7",
+        "@types/uuid": "^3.4.5",
+        "faker": "^4.1.0",
+        "jest": "^24.9.0",
+        "rimraf": "^3.0.0",
+        "ts-jest": "^24.1.0",
+        "ts-node": "^8.4.1",
+        "typescript": "^3.6.4"
+    },
+    "scripts": {
+        "sonar": "sonar-scanner.bat -Dsonar.projectKey=nodulusteam_methodus-spreadsheet -Dsonar.organization=nodulusteam-github -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=e01e7adc2647251c0651a3bab28de27b479b4432",
+        "build": "rimraf lib && tsc",
+        "test": "npm run build && jest --verbose"
+    }
 }

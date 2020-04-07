@@ -9,11 +9,13 @@
             "request": "launch",
             "name": "Launch Program",
             "console": "internalConsole",
+            "cwd":"${workspaceFolder}",
             "outputCapture": "std",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\lib\\test\\auth-test.js",
+            "env": {
+                "DEBUG":"methodus:*"
+            },
+            
+            "program": "${workspaceFolder}/lib/test/auth-test.js",
            
         },
         {

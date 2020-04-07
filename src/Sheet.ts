@@ -1,6 +1,7 @@
 import uuidv1 from 'uuid/v1';
 const log = require('debug')('methodus:spreadsheet');
-import { GoogleSpreadsheet, Credentials, SheetInfo, PagingInfo } from './GoogleSpreadsheet';
+import { GoogleSpreadsheet } from './GoogleSpreadsheet';
+import { Credentials, SheetInfo, PagingInfo } from './interfaces';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { SpreadsheetRow } from './SpreadsheetRow';
 import { Dictionary, prepareObject, parseObject } from './functions';
@@ -99,8 +100,9 @@ export class Sheet {
                 const newSheet = await this.doc.addWorksheet({
                     title: `${sheet}`,
                 });
-
-                this.doc.worksheets[sheet] = new SpreadsheetWorksheet(this.doc, newSheet.data);
+                if (newSheet) {
+                    this.doc.worksheets[sheet] = new SpreadsheetWorksheet(this.doc, newSheet.data);
+                }
 
             } catch (error) {
                 throw new Error('Cannot create sheet');
@@ -141,7 +143,9 @@ export class Sheet {
 
                     }
                 });
-                this.doc.worksheets[sheet] = newSheet;
+                if (newSheet) {
+                    this.doc.worksheets[sheet] = newSheet;
+                }
             } catch (error) {
                 throw new Error('Cannot create sheet');
             }

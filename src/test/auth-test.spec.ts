@@ -1,6 +1,7 @@
-import { GoogleSpreadsheet, Credentials } from '../GoogleSpreadsheet';
+import { GoogleSpreadsheet } from '../GoogleSpreadsheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
+import { Credentials } from '../interfaces';
 
 const _ = require('lodash');
 
@@ -19,7 +20,7 @@ describe('Authentication', () => {
     });
   });
 
-  describe('without auth', () => {
+  describe('Test auth', () => {
     describe('reading + getInfo', () => {
       test('getInfo should fail on a private doc', () => {
 
@@ -44,23 +45,23 @@ describe('Authentication', () => {
       });
 
 
-      describe('writing', () => {
-        // it still fails on the public doc because you always need to auth
-        _.each(['public', 'public-read-only', 'private'], (key: string) => {
-          test('should fail on a ' + key + ' doc', async () => {
-            try {
-              const sheet = await docs[key].addWorksheet('test');
-              return sheet;
-            } catch (err) {
 
-              expect(err).toContain('The caller does not have permission');
-            }
-            return true;
-          });
+    });
+    describe('writing', () => {
+      // it still fails on the public doc because you always need to auth
+      _.each(['public', 'public-read-only', 'private'], (key: string) => {
+        test('should fail on a ' + key + ' doc', async () => {
+          try {
+            const sheet = await docs[key].addWorksheet('test');
+            return sheet;
+          } catch (err) {
+
+            expect(err.message).toContain('Request failed with status code 403');
+          }
+          return true;
         });
       });
     });
-
 
     describe('authentication', () => {
       test('should fail if the token is empty', async () => {

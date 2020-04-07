@@ -1,45 +1,32 @@
 const log = require('debug')('methodus:spreadsheet');
-import request from 'request-promise';
-import * as  http from 'http';
-import * as  querystring from 'querystring';
+// import * as  http from 'http';
+// import * as  querystring from 'querystring';
 import * as  _ from 'lodash';
 const GoogleAuth = require('google-auth-library');
 import { SpreadsheetRow } from './SpreadsheetRow';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { EventEmitter } from 'events';
 import { Dictionary, parseObjects } from './functions';
+import { Injector, ClientConfiguration, ConfiguredServer } from '@methodus/server';
+import { GoogleSheetContract } from './google-contracts';
+import { Http } from '@methodus/platform-rest';
+import { Credentials, SheetInfo, ResponsePromise } from './interfaces';
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Z'];
 
 
-export type WebResponse = { result: any, body: any };
-type ResponsePromise = Promise<WebResponse | undefined | boolean>;
 
-const GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets/";
+
+const GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets";
 const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds"];
 
+
+@ClientConfiguration(GoogleSheetContract, Http, GOOGLE_FEED_URL)
+class SetupServer extends ConfiguredServer {
+
+}
+new SetupServer();
 // const REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
 
-export class SheetInfo {
-    constructor(data: SheetInfo) {
-        this.id = data.id;
-        this.title = data.title;
-        this.worksheets = data.worksheets;
-
-    }
-    public id: string;
-    public title: string;
-    public worksheets: SpreadsheetWorksheet[];
-}
-
-
-export class PagingInfo {
-    total: number = 0;
-}
-
-export interface Credentials {
-    client_email: string;
-    private_key: string;
-}
 // The main class that represents a single sheet
 // this is the main module.exports
 export class GoogleSpreadsheet extends EventEmitter {
@@ -90,6 +77,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     async renewJwtAuth() {
         return new Promise((resolve, reject) => {
+
             this.auth_mode = 'jwt';
             this.jwt_client.authorize((err: Error, token: any) => {
                 if (err) return reject(err);
@@ -117,99 +105,104 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
     }
 
-    // This method is used internally to make all requests
-    async makeFeedRequest(url_params: any, method: string, query_or_data: any): ResponsePromise {
+    // // // This method is used internally to make all requests
+    // // async makeFeedRequest(url_params: any, method: string, query_or_data: any): ResponsePromise {
 
-        let url = '';
-        const headers: any = {};
-        if (typeof (url_params) == 'string') {
-            // used for edit / delete requests
-            url = url_params;
-        } else if (Array.isArray(url_params)) {
-            //used for get and post requets
-            // url_params.push(this.visibility, this.projection);
-            url = GOOGLE_FEED_URL + url_params.join("/");
-        }
+    // //     let url = '';
+    // //     const headers: any = {};
+    // //     if (typeof (url_params) == 'string') {
+    // //         // used for edit / delete requests
+    // //         url = url_params;
+    // //     } else if (Array.isArray(url_params)) {
+    // //         //used for get and post requets
+    // //         // url_params.push(this.visibility, this.projection);
+    // //         url = GOOGLE_FEED_URL + url_params.join("/");
+    // //     }
 
-        if (this.auth_mode === 'jwt') {
-            // check if jwt token is expired
-            if (!this.google_auth || this.google_auth.expires < +new Date()) {
-                await this.renewJwtAuth();
-            }
+    // //     if (this.auth_mode === 'jwt') {
+    // //         // check if jwt token is expired
+    // //         if (!this.google_auth || this.google_auth.expires < +new Date()) {
+    // //             await this.renewJwtAuth();
+    // //         }
 
-            if (this.google_auth) {
-                if (this.google_auth.type === 'Bearer') {
-                    headers['Authorization'] = 'Bearer ' + this.google_auth.value;
-                } else {
-                    headers['Authorization'] = "GoogleLogin auth=" + this.google_auth;
-                }
-            }
-        }
-
-
-        headers['Gdata-Version'] = '4.0';
-        if (method == 'POST' || method == 'PUT') {
-            headers['content-type'] = 'application/json';
-        }
-
-        if (method == 'PUT' || method == 'POST' && url.indexOf('/batch') != -1) {
-            headers['If-Match'] = '*';// v1();//'*';
-        }
-
-        if (method == 'GET' && query_or_data) {
-            let query = "?" + querystring.stringify(query_or_data);
-            // replacements are needed for using     structured queries on getRows
-            query = query.replace(/%3E/g, '>');
-            query = query.replace(/%3D/g, '=');
-            query = query.replace(/%3C/g, '<');
-            url += query;
-        }
-
-        try {
-            let bufferBody;
-            if (query_or_data && Object.keys(query_or_data).length) {
-                bufferBody = Buffer.from(JSON.stringify(query_or_data));
-            }
-            const response = await request({
-                resolveWithFullResponse: true,
-                url: url,
-                method: method,
-                headers: headers,
-                gzip: this.options.gzip !== undefined ? this.options.gzip : true,
-                body: method == 'POST' || method == 'PUT' ? bufferBody : null
-            }).promise();
-            const body: any = response.body;
-            if (body) {
-                const bodyObject: any = JSON.parse(body);
-                return ({ result: response, body: bodyObject });
-            } else {
-                return true;
-            }
+    // //         if (this.google_auth) {
+    // //             if (this.google_auth.type === 'Bearer') {
+    // //                 headers['Authorization'] = 'Bearer ' + this.google_auth.value;
+    // //             } else {
+    // //                 headers['Authorization'] = "GoogleLogin auth=" + this.google_auth;
+    // //             }
+    // //         }
+    // //     }
 
 
-        } catch (err) {
-            const bodyObject: any = JSON.parse(err.error);
-            if (bodyObject.error.code === 401) {
-                throw (new Error("Invalid authorization key."));
-            } else if (err.statusCode >= 400) {
-                const message = bodyObject.error.message;
-                throw (new Error("HTTP error " + bodyObject.error.code + " (" + http.STATUS_CODES[bodyObject.error.code]) + ") - " + message);
-            } else if (err.statusCode === 200) {
-                throw (new Error("Sheet is private. Use authentication or make public. (see https://github.com/theoephraim/node-google-spreadsheet#a-note-on-authentication for details)"));
-            }
-            throw (err);
-        }
-    }
+    // //     headers['Gdata-Version'] = '4.0';
+    // //     if (method == 'POST' || method == 'PUT') {
+    // //         headers['content-type'] = 'application/json';
+    // //     }
+
+    // //     if (method == 'PUT' || method == 'POST' && url.indexOf('/batch') != -1) {
+    // //         headers['If-Match'] = '*';// v1();//'*';
+    // //     }
+
+    // //     if (method == 'GET' && query_or_data) {
+    // //         let query = "?" + querystring.stringify(query_or_data);
+    // //         // replacements are needed for using     structured queries on getRows
+    // //         query = query.replace(/%3E/g, '>');
+    // //         query = query.replace(/%3D/g, '=');
+    // //         query = query.replace(/%3C/g, '<');
+    // //         url += query;
+    // //     }
+
+    // //     try {
+    // //         // let bufferBody;
+    // //         // if (query_or_data && Object.keys(query_or_data).length) {
+    // //         //     bufferBody = Buffer.from(JSON.stringify(query_or_data));
+    // //         // }
+    // //         const response: any = {};
+
+    // //         // //await request({
+    // //         //     resolveWithFullResponse: true,
+    // //         //     url: url,
+    // //         //     method: method,
+    // //         //     headers: headers,
+    // //         //     gzip: this.options.gzip !== undefined ? this.options.gzip : true,
+    // //         //     body: method == 'POST' || method == 'PUT' ? bufferBody : null
+    // //         // }).promise();
+
+
+    // //         const body: any = response.body;
+    // //         if (body) {
+    // //             const bodyObject: any = JSON.parse(body);
+    // //             return ({ result: response, body: bodyObject });
+    // //         } else {
+    // //             return true;
+    // //         }
+
+
+    // //     } catch (err) {
+    // //         const bodyObject: any = JSON.parse(err.error);
+    // //         if (bodyObject.error.code === 401) {
+    // //             throw (new Error("Invalid authorization key."));
+    // //         } else if (err.statusCode >= 400) {
+    // //             const message = bodyObject.error.message;
+    // //             throw (new Error("HTTP error " + bodyObject.error.code + " (" + http.STATUS_CODES[bodyObject.error.code]) + ") - " + message);
+    // //         } else if (err.statusCode === 200) {
+    // //             throw (new Error("Sheet is private. Use authentication or make public. (see https://github.com/theoephraim/node-google-spreadsheet#a-note-on-authentication for details)"));
+    // //         }
+    // //         throw (err);
+    // //     }
+    // // }
 
 
 
     async getInfo(): Promise<SheetInfo> {
 
         try {
-            const response: any = await this.makeFeedRequest([this.ss_key], 'GET', {});
-
-
-            const data = response.body;
+            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            serviceContract.auth_mode = this.auth_mode;
+            serviceContract.jwt_client = this.jwt_client;
+            const response: any = await serviceContract.getInfo(this.ss_key);
+            const data = response.result;
             if (data === true) {
                 throw new Error('No response to getInfo call');
             }
@@ -255,8 +248,11 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
 
         try {
-            const data: WebResponse = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest) as WebResponse;
-            return data;
+            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const response = await serviceContract.batchUpdate(this.ss_key, webRequest)
+
+            // const data: WebResponse = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest) as WebResponse;
+            return response.result;
         } catch (error) {
 
             if (error.indexOf(`You can't remove all the sheets in a document`) < 0) {
@@ -268,7 +264,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     }
 
-    async addWorksheet(opts: any): Promise<SpreadsheetWorksheet> {
+    async addWorksheet(opts: any): Promise<SpreadsheetWorksheet | undefined> {
         // make opts optional
         const defaults = {
             title: 'Worksheet ' + (+new Date()),  // need a unique title
@@ -298,13 +294,18 @@ export class GoogleSpreadsheet extends EventEmitter {
             ]
         }
 
+        const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
 
-        const workSheetdata: WebResponse = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest) as WebResponse;
-        const sheet = new SpreadsheetWorksheet(this, workSheetdata.body.replies[0].addSheet.properties);
-        this.worksheets = this.worksheets || [];
-        this.worksheets[sheet.title] = sheet;
-
-        return sheet;
+        const response = await serviceContract.batchUpdate(this.ss_key, webRequest)
+        if (response.result) {
+            const workSheetdata: any = response.result;
+            console.log(workSheetdata);
+            const sheet = new SpreadsheetWorksheet(this, workSheetdata.replies[0].addSheet.properties);
+            this.worksheets = this.worksheets || [];
+            this.worksheets[sheet.title] = sheet;
+            return sheet;
+        }
+        return;
     }
 
     // async removeWorksheet(sheet_id: any) {
@@ -317,10 +318,10 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
     async getHeaderRow<Model>(worksheet_id: string): Promise<SpreadsheetRow<Model>> {
-        // the first row is used as titles/keys and is not included
-        const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_id}!A1:Z1`], 'GET', {});
-        // const data = response.result;
-        const entries = response.body.values;
+
+        const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+        const response = await serviceContract.getHeaderRow(this.ss_key, `${worksheet_id}!A1:Z1`)
+        const entries = response.result.values;
         if (entries) {
             return new SpreadsheetRow<Model>(this, entries[0], worksheet_id, 0);
         } else {
@@ -336,10 +337,11 @@ export class GoogleSpreadsheet extends EventEmitter {
         const rows: SpreadsheetRow<Model>[] = [];
         try {
             const worksheet_id = this.worksheets[worksheet_title] ? this.worksheets[worksheet_title].id : worksheet_title;
+            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract)
             // const worksheetName = this.info.worksheets[worksheet_id].title;
-            const response: any = await this.makeFeedRequest([this.ss_key, 'values', `${worksheet_title}!A1:Z1000`], 'GET', query);
+            const response: any = await serviceContract.getRows(this.ss_key, `${worksheet_title}!A1:Z1000`, query);
             const data = response.result;
-            const entries = response.body.values;
+            const entries = response.result.values;
             const objectTemplate: any = {};
             if (data === true) {
                 throw (new Error('No response to getRows call'))
@@ -418,9 +420,10 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
+            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const response = await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('insert', { sheetId: worksheet_id });
-            if (response) {
+            if (response.result) {
                 const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
                 return row;
             }
@@ -485,12 +488,9 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
+            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('insert', { sheetId: worksheet_id });
-
-
-
-
             const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
             return row;
         } catch (error) {
@@ -557,9 +557,10 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
-            this.emit('update', { sheetId: worksheet_id });
 
+            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            await serviceContract.batchUpdate(this.ss_key, webRequest);
+            this.emit('update', { sheetId: worksheet_id });
 
             const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
             return row;
@@ -600,9 +601,11 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: WebResponse | undefined | boolean = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
+
+            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const response = await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('delete', { sheetId: worksheet_id });
-            return response;
+            return response.result;
 
         } catch (error) {
             console.error('Capured error at addRow', error);
@@ -643,9 +646,10 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const response: any = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest);
+            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const response = await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('delete', { sheetId: worksheet_id });
-            return response;
+            return response.result;
         } catch (error) {
             console.error('Capured error at addRow', error);
             throw (new Error(error));

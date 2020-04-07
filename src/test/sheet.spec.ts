@@ -3,7 +3,7 @@ import { Sheet, getSheet, SheetDataResult } from '../Sheet';
 import { sheet_ids } from './config';
 import creds from './service-account-creds';
 import { SpreadsheetRow } from '../SpreadsheetRow';
-import { WebResponse } from '../GoogleSpreadsheet';
+import { WebResponse } from '../interfaces';
 
 
 const docs: { [key: string]: Sheet } = {};
@@ -184,7 +184,7 @@ describe('Authentication', () => {
         for (const worksheet of info.worksheets) {
           if (worksheet.title !== 'test') {
             const removeResult: WebResponse = await docs['private'].doc.removeWorksheet(worksheet.id) as unknown as WebResponse;
-            expect(removeResult.result).toBeDefined();
+            expect(removeResult).toBeDefined();
           }
         }
       }
