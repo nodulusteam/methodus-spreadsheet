@@ -2,7 +2,7 @@
     "author": "NodulusTeam",
     "name": "@methodus/google-spreadsheet",
     "description": "Google Spreadsheets V4 Data API -- simple interface to read/write rows/cells, manage sheets",
-    "version": "1.0.18",
+    "version": "1.0.19",
     "main": "./lib/index.js",
     "typings": "./lib/index.d.ts",
     "license": "BSD-3-Clause",
@@ -26,7 +26,6 @@
         "@methodus/server": "5.*.*"
     },
     "dependencies": {
-       
         "google-auth-library": "^6.0.0",
         "uuid": "^3.3.3"
     },
