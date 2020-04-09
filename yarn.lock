@@ -287,17 +287,17 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^13.0.0"
 
-"@methodus/platform-rest@^5.0.16":
+"@methodus/platform-rest@5.*.*":
   version "5.0.16"
   resolved "https://registry.yarnpkg.com/@methodus/platform-rest/-/platform-rest-5.0.16.tgz#bc38f6bec9859d20fe1771bcca8039fd6ded47cf"
   integrity sha512-pPCvhjS+uaydL6DEDqHiBJeaBjsIj7xfrQ1d3Y5/k2ms7OzI900+dybOaUlPnXlA9l1O9jjnVtbbu7Mrgf1fmA==
   dependencies:
     axios "^0.19.2"
 
-"@methodus/server@^5.0.27":
-  version "5.0.27"
-  resolved "https://registry.yarnpkg.com/@methodus/server/-/server-5.0.27.tgz#faf0b4b43a7c3afd638295fe728af7201b3d61d4"
-  integrity sha512-W95olM5UA6IQcrQ0KryY2+ZB3+zKnerQuG4ZHtetQFI04S3i1NM2SXZ4XLsFApNVWZYm60ly7sB1p9fABnQpBw==
+"@methodus/server@5.*.*":
+  version "5.0.28"
+  resolved "https://registry.yarnpkg.com/@methodus/server/-/server-5.0.28.tgz#a328cc422ded8cdea748d7c75edba330936301dd"
+  integrity sha512-5r9yS43XYV5XinevwvYcGMr6wdH6fRymRReUZgcsNnT4db19v6uWY8EVMIdTakezntAaNd6HYEZMJ8VK/YZsVQ==
   dependencies:
     colors "^1.1.2"
     debug "^4.1.1"
@@ -371,11 +371,6 @@
   integrity sha512-Fb38HkXSVA4L8fGKEZ6le5bB8r6MRWlOCZbVuWZcmOMSCd2wCYOwN1ibj8daIoV9naq7aaOZjrLCoCMptKU/4Q==
   dependencies:
     jest-diff "^24.3.0"
-
-"@types/lodash@^4.14.144":
-  version "4.14.149"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.149.tgz#1342d63d948c6062838fbf961012f74d4e638440"
-  integrity sha512-ijGqzZt/b7BfzcK9vTrS6MFljQRPn5BFWOx8oE0GYxribu6uV+aA9zZuXI1zc/etK9E8nrgdoF2+LgUw7+9tJQ==
 
 "@types/node@^12.11.7":
   version "12.12.26"

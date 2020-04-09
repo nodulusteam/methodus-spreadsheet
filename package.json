@@ -21,13 +21,18 @@
         "api",
         "google sheets"
     ],
+    "peerDependencies": {
+        "@methodus/platform-rest": "5.*.*",
+        "@methodus/server": "5.*.*"
+    },
     "dependencies": {
-        "@methodus/platform-rest": "^5.0.16",
-        "@methodus/server": "^5.0.27",
+       
         "google-auth-library": "^6.0.0",
         "uuid": "^3.3.3"
     },
     "devDependencies": {
+        "@methodus/platform-rest": "5.*.*",
+        "@methodus/server": "5.*.*",
         "@types/faker": "^4.1.9",
         "@types/jest": "^24.0.21",
         "@types/node": "^12.11.7",
