@@ -251,7 +251,6 @@ export class Sheet {
         await this.doc.useServiceAccountAuth(this.credentials!);
         await this.doc.getInfo();
         const baseObject = await this.handleHeader(dataObject, sheet);
-
         const row = this.sheets[sheet].filter(filter);
         if (row.length > 0) {
             baseObject.data = row[0].data;

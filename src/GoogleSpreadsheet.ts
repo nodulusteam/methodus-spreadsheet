@@ -6,7 +6,7 @@ import { GoogleAuth, JWTInput, JWT, UserRefreshClient } from 'google-auth-librar
 import { SpreadsheetRow } from './SpreadsheetRow';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { EventEmitter } from 'events';
-import { Dictionary, parseObjects } from './functions';
+import { Dictionary, parseObjects, prepareObject } from './functions';
 import { Injector, ClientConfiguration, ConfiguredServer } from '@methodus/server';
 import { GoogleSheetContract } from './google-contracts';
 import { Http } from '@methodus/platform-rest';
@@ -491,7 +491,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
             return row;
         } catch (error) {
-            console.error('Capured error at addRow', error);
+            console.error('Capured error at addRows', error);
             throw (new Error(error));
         }
     }
@@ -500,6 +500,8 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
     async updateRow<Model>(worksheet_id: string, data: Partial<Model>, headerRow: string[], index: number): Promise<SpreadsheetRow<Model>> {
+        data = prepareObject(data);
+
         const webRequest = {
             "requests": [
                 {
@@ -558,11 +560,17 @@ export class GoogleSpreadsheet extends EventEmitter {
             const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
             await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('update', { sheetId: worksheet_id });
-
+            debugger;
+            Object.keys(data).forEach((key: string) => {
+                parseObjects(data, key);
+            });
+            debugger;
             const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
+            debugger;
             return row;
         } catch (error) {
-            console.error('Capured error at addRow', error);
+            debugger;
+            console.error('Capured error at updateRow', error);
             throw (new Error(error));
         }
     }
@@ -605,7 +613,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             return response.result;
 
         } catch (error) {
-            console.error('Capured error at addRow', error);
+            console.error('Capured error at removeRow', error);
             throw (new Error(error));
         }
     }
@@ -648,7 +656,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             this.emit('delete', { sheetId: worksheet_id });
             return response.result;
         } catch (error) {
-            console.error('Capured error at addRow', error);
+            console.error('Capured error at removeRows', error);
             throw (new Error(error));
         }
     }

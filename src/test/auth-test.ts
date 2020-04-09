@@ -51,7 +51,6 @@ Object.keys(sheet_ids).forEach(function (key) {
   const queryResults = await docs['private'].query<SheetModel>('default', (row: SpreadsheetRow<SheetModel>) => {
     return row.data['email'] === newRow.email
   });
-
   console.log('query', queryResults.data);
 
   const updatedObject = Object.assign({}, queryResults.data[0]);
@@ -62,12 +61,19 @@ Object.keys(sheet_ids).forEach(function (key) {
   results = await docs['private'].update<SheetModel>('default', updatedObject);
   console.log('update', results);
 
+  const queryResults2 = await docs['private'].query<SheetModel>('default');
+  console.log('queryResults2', queryResults2);
+
+
+
   const updateByResults = await docs['private'].updateBy<SheetModel>('default', { email: faker.internet.email() }, (row: SpreadsheetRow<SheetModel>) => {
     console.log(row.data.email, updatedObject.email, row.data.email === updatedObject.email);
     return row.data.email === updatedObject.email;
   });
 
   console.log('updateBy', updateByResults);
+
+
 
   results = await docs['private'].delete('default', queryResults.data[0]);
   console.log('delete', results);
