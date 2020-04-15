@@ -560,16 +560,12 @@ export class GoogleSpreadsheet extends EventEmitter {
             const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
             await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('update', { sheetId: worksheet_id });
-            debugger;
             Object.keys(data).forEach((key: string) => {
                 parseObjects(data, key);
             });
-            debugger;
             const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
-            debugger;
             return row;
         } catch (error) {
-            debugger;
             console.error('Capured error at updateRow', error);
             throw (new Error(error));
         }
