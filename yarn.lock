@@ -287,12 +287,13 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^13.0.0"
 
-"@methodus/platform-rest@5.*.*":
-  version "5.0.16"
-  resolved "https://registry.yarnpkg.com/@methodus/platform-rest/-/platform-rest-5.0.16.tgz#bc38f6bec9859d20fe1771bcca8039fd6ded47cf"
-  integrity sha512-pPCvhjS+uaydL6DEDqHiBJeaBjsIj7xfrQ1d3Y5/k2ms7OzI900+dybOaUlPnXlA9l1O9jjnVtbbu7Mrgf1fmA==
+"@methodus/platform-rest@^5.0.20":
+  version "5.0.20"
+  resolved "https://registry.yarnpkg.com/@methodus/platform-rest/-/platform-rest-5.0.20.tgz#4228243a414b662b77b57043d99df346750bb3fa"
+  integrity sha512-rLviXstEexXslQguyuQ3WZvfR+KqezkynWoMcg/TQCZE5T4+DpxyhkeODv59ZLw0qnGlCLHa3JhDktTdE0mt9A==
   dependencies:
     axios "^0.19.2"
+    tunnel "^0.0.6"
 
 "@methodus/server@5.*.*":
   version "5.0.28"
@@ -3359,6 +3360,11 @@ tunnel-agent@^0.6.0:
   integrity sha1-J6XeoGs2sEoKmWZ3SykIaPD8QP0=
   dependencies:
     safe-buffer "^5.0.1"
+
+tunnel@^0.0.6:
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/tunnel/-/tunnel-0.0.6.tgz#72f1314b34a5b192db012324df2cc587ca47f92c"
+  integrity sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==
 
 tweetnacl@^0.14.3, tweetnacl@~0.14.0:
   version "0.14.5"

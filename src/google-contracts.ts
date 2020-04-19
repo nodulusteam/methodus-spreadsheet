@@ -8,7 +8,6 @@ import { JWT } from 'google-auth-library';
 
 @Auth(AuthType.BearerToken, async function (_options: any) {
     const caller: any = this as any;
-    //const _auth_client = new GoogleAuth();
     if (caller.auth_mode === 'jwt') {
         if (!caller.google_auth || caller.google_auth.expires < +new Date()) {
             await caller.renewJwtAuth();

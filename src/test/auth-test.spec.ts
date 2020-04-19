@@ -21,16 +21,15 @@ describe('Authentication', () => {
   });
 
   describe('Test auth', () => {
-    describe('reading + getInfo', () => {
+    describe('getRows + getInfo', () => {
       test('getInfo should fail on a private doc', () => {
-
         return docs['private'].getInfo().catch((err: Error) => {
-          expect(err).toContain('The caller does not have permission');
+          expect(err.message).toContain('Request failed with status code 403');
         });
 
       });
 
-      test('should fail on a private doc', async () => {
+      test('getRows should fail on a private doc', async () => {
         return docs['private'].getRows('test').catch((err: string) => {
           expect(err).toContain('The caller does not have permission');
         });

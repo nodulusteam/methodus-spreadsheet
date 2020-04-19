@@ -38,7 +38,7 @@ describe('Authentication', () => {
   });
 
   describe('reading + getInfo', () => {
-    test('getInfo should fail on a private doc', async () => {
+    test('getInfo should work on a private doc', async () => {
       jest.setTimeout(1000 * 30)
       for (const sheet of Object.values(docs)) {
         try {
