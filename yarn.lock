@@ -287,10 +287,10 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^13.0.0"
 
-"@methodus/platform-rest@^5.0.20":
-  version "5.0.20"
-  resolved "https://registry.yarnpkg.com/@methodus/platform-rest/-/platform-rest-5.0.20.tgz#4228243a414b662b77b57043d99df346750bb3fa"
-  integrity sha512-rLviXstEexXslQguyuQ3WZvfR+KqezkynWoMcg/TQCZE5T4+DpxyhkeODv59ZLw0qnGlCLHa3JhDktTdE0mt9A==
+"@methodus/platform-rest@^5.0.21":
+  version "5.0.21"
+  resolved "https://registry.yarnpkg.com/@methodus/platform-rest/-/platform-rest-5.0.21.tgz#836302940d098fe45dd62c3d12fba8915adc5c1a"
+  integrity sha512-IVFj3zPD5btMc03BYWGLDJDEhYKaFMNod/NcV/Wrm5wEBG7aKfIKauU6o4iDsWJ9Y4edlCKWcZz19p18LHWD4A==
   dependencies:
     axios "^0.19.2"
     tunnel "^0.0.6"
