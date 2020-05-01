@@ -47,7 +47,12 @@ export function parseObjects(clone: Dictionary, key: string): void {
             if (clone[key].indexOf('[') === 0 || clone[key].indexOf('{') === 0) {
                 clone[key] = JSON.parse(clone[key]);
             } else {
-                clone[key] = JsonDateParse(clone[key]);
+                const numResult = Number(clone[key]);
+                if (!Number.isNaN(numResult)) {
+                    clone[key] = numResult;
+                } else {
+                    clone[key] = JsonDateParse(clone[key]);
+                }
             }
         }
 
