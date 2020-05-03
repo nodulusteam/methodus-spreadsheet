@@ -263,12 +263,12 @@ export class Sheet {
         }
     }
 
-    public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {},
+    public async query<Model>(sheet: string, query?: (row: SpreadsheetRow<Model>) => {},useCache: boolean=true,
         start: number = 0, end: number = 9, sorts?: SortRequest[]): Promise<SheetDataResult<Model>> {
 
         try {
             const ready = new Promise(async (resolve, reject) => {
-                if (!this.loaded[sheet] || !this.sheets[sheet]) {
+                if (!this.loaded[sheet] || !this.sheets[sheet] || !useCache) {
                     this.sheets[sheet] = [];
                     await this.doc.useServiceAccountAuth(this.credentials!);
                     this.info = await this.doc.getInfo();
