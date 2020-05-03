@@ -148,11 +148,11 @@ describe('Authentication', () => {
 
     describe('test sorting', () => {
       test('sort asc', async () => {
-        const all = await docs['private'].query<SheetModel>('test', undefined, 0, 100, [{ colId: 'email', direction: 'asc' }]);
+        const all = await docs['private'].query<SheetModel>('test', undefined, true, 0, 100, [{ colId: 'email', direction: 'asc' }]);
         expect(all).toBeDefined();
       });
       test('sort desc', async () => {
-        const all = await docs['private'].query<SheetModel>('test', undefined, 0, 100, [{ colId: 'email', direction: 'desc' }]);
+        const all = await docs['private'].query<SheetModel>('test', undefined, true, 0, 100, [{ colId: 'email', direction: 'desc' }]);
         expect(all).toBeDefined();
       });
     });
@@ -170,7 +170,7 @@ describe('Authentication', () => {
 
 
     test('deleteMany', async () => {
-      const all = await docs['private'].query<SheetModel>('test', undefined, 0, 100, [{ colId: 'keyid', direction: 'asc' }]);
+      const all = await docs['private'].query<SheetModel>('test', undefined, true, 0, 100, [{ colId: 'keyid', direction: 'asc' }]);
       const results = await docs['private'].deleteMany('test', all.data.map((row: any) => row.keyid));
       expect(results).toBeDefined();
       expect(results.length).toBe(all.data.length);
