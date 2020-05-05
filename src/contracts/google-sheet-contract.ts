@@ -1,12 +1,13 @@
 import { MethodConfig, Method, Param, Query, Auth, AuthType, MethodResult, Body } from '@methodus/server';
 import { Verbs } from '@methodus/platform-rest';
-import { SheetInfo, WebResponse } from './interfaces';
+import { SheetInfo, WebResponse, SheetCreateResponse } from '../interfaces';
 import { JWT } from 'google-auth-library';
+import { Dictionary } from '../functions';
 //const GoogleAuth = require('google-auth-library');
 
 
 
-@Auth(AuthType.BearerToken, async function (_options: any) {
+@Auth(AuthType.BearerToken, async function (_options: Dictionary) {
     const caller: any = this as any;
     if (caller.auth_mode === 'jwt') {
         if (!caller.google_auth || caller.google_auth.expires < +new Date()) {
@@ -34,12 +35,12 @@ export class GoogleSheetContract {
     }
 
     @Method(Verbs.Get, '/:ss_key/values/:range')
-    async getHeaderRow(@Param('ss_key') _ss_key: string, @Param('range') _range: string) : Promise<MethodResult<any>> {
+    async getHeaderRow(@Param('ss_key') _ss_key: string, @Param('range') _range: string): Promise<MethodResult<any>> {
 
         return new MethodResult<any>({});
     }
 
- 
+
 
     @Method(Verbs.Post, '/:ss_key:batchUpdate')
     async batchUpdate(@Param('ss_key') _ss_key: string, @Body() _body: any): Promise<MethodResult<WebResponse>> {
@@ -52,6 +53,12 @@ export class GoogleSheetContract {
     async getInfo(@Param('ss_key') _ss_key: string): Promise<MethodResult<SheetInfo>> {
         const sheetInfo: SheetInfo = new SheetInfo({ title: 'contract', worksheets: [], id: 'xxxxx' });
         return new MethodResult<SheetInfo>(sheetInfo);
+    }
+
+
+    @Method(Verbs.Post, '/')
+    async createSheet(@Body() _options: any): Promise<MethodResult<SheetCreateResponse>> {
+        return new MethodResult<SheetCreateResponse>({} as any);
     }
 
     setAuthToken(auth_id: any) {

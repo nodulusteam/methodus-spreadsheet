@@ -7,20 +7,24 @@ import { SpreadsheetRow } from './SpreadsheetRow';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { EventEmitter } from 'events';
 import { Dictionary, parseObjects, prepareObject } from './functions';
-import { Injector, ClientConfiguration, ConfiguredServer } from '@methodus/server';
-import { GoogleSheetContract } from './google-contracts';
+import { Injector, ClientConfiguration, ConfiguredServer, MethodResult } from '@methodus/server';
+import { GoogleSheetContract } from './contracts/google-sheet-contract';
 import { Http } from '@methodus/platform-rest';
-import { Credentials, SheetInfo, ResponsePromise } from './interfaces';
+import { Credentials, SheetInfo, ResponsePromise, SheetCreateResponse, SheetPermissionsResponse } from './interfaces';
+import { GoogleDriveContract } from './contracts/google-drive-contract';
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Z'];
 
 
 
+const GOOGLE_DRIVE_URL = "https://www.googleapis.com/drive/v3";
+const GOOGLE_SHEET_URL = "https://content-sheets.googleapis.com/v4/spreadsheets";
+const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/drive.file"];
 
-const GOOGLE_FEED_URL = "https://content-sheets.googleapis.com/v4/spreadsheets";
-const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds"];
+
+@ClientConfiguration(GoogleSheetContract, Http, GOOGLE_SHEET_URL)
+@ClientConfiguration(GoogleDriveContract, Http, GOOGLE_DRIVE_URL)
 
 
-@ClientConfiguration(GoogleSheetContract, Http, GOOGLE_FEED_URL)
 class SetupServer extends ConfiguredServer {
 
 }
@@ -51,14 +55,10 @@ export class GoogleSpreadsheet extends EventEmitter {
         super();
         this.ss_key = ss_key;
 
-        this.auth_client = new GoogleAuth({ scopes: 'https://www.googleapis.com/auth/spreadsheets' });
+        this.auth_client = new GoogleAuth({ scopes: GOOGLE_AUTH_SCOPE });
         this.options = options || {};
         // auth_id may be null
         this.setAuthAndDependencies(auth_id);
-
-        if (!ss_key) {
-            throw new Error("Spreadsheet key not provided.");
-        }
     }
 
 
@@ -103,95 +103,34 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
     }
 
-    // // // This method is used internally to make all requests
-    // // async makeFeedRequest(url_params: any, method: string, query_or_data: any): ResponsePromise {
-
-    // //     let url = '';
-    // //     const headers: any = {};
-    // //     if (typeof (url_params) == 'string') {
-    // //         // used for edit / delete requests
-    // //         url = url_params;
-    // //     } else if (Array.isArray(url_params)) {
-    // //         //used for get and post requets
-    // //         // url_params.push(this.visibility, this.projection);
-    // //         url = GOOGLE_FEED_URL + url_params.join("/");
-    // //     }
-
-    // //     if (this.auth_mode === 'jwt') {
-    // //         // check if jwt token is expired
-    // //         if (!this.google_auth || this.google_auth.expires < +new Date()) {
-    // //             await this.renewJwtAuth();
-    // //         }
-
-    // //         if (this.google_auth) {
-    // //             if (this.google_auth.type === 'Bearer') {
-    // //                 headers['Authorization'] = 'Bearer ' + this.google_auth.value;
-    // //             } else {
-    // //                 headers['Authorization'] = "GoogleLogin auth=" + this.google_auth;
-    // //             }
-    // //         }
-    // //     }
+    public async addSpreadsheet(title: string): Promise<SheetCreateResponse> {
+        try {
+            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            serviceContract.auth_mode = this.auth_mode;
+            serviceContract.jwt_client = this.jwt_client;
+            const response = await serviceContract.createSheet({ properties: { title: title } });
+            return response.result
+        } catch (error) {
+            console.error(error);
+            throw (error);
+        }
+    }
 
 
-    // //     headers['Gdata-Version'] = '4.0';
-    // //     if (method == 'POST' || method == 'PUT') {
-    // //         headers['content-type'] = 'application/json';
-    // //     }
-
-    // //     if (method == 'PUT' || method == 'POST' && url.indexOf('/batch') != -1) {
-    // //         headers['If-Match'] = '*';// v1();//'*';
-    // //     }
-
-    // //     if (method == 'GET' && query_or_data) {
-    // //         let query = "?" + querystring.stringify(query_or_data);
-    // //         // replacements are needed for using     structured queries on getRows
-    // //         query = query.replace(/%3E/g, '>');
-    // //         query = query.replace(/%3D/g, '=');
-    // //         query = query.replace(/%3C/g, '<');
-    // //         url += query;
-    // //     }
-
-    // //     try {
-    // //         // let bufferBody;
-    // //         // if (query_or_data && Object.keys(query_or_data).length) {
-    // //         //     bufferBody = Buffer.from(JSON.stringify(query_or_data));
-    // //         // }
-    // //         const response: any = {};
-
-    // //         // //await request({
-    // //         //     resolveWithFullResponse: true,
-    // //         //     url: url,
-    // //         //     method: method,
-    // //         //     headers: headers,
-    // //         //     gzip: this.options.gzip !== undefined ? this.options.gzip : true,
-    // //         //     body: method == 'POST' || method == 'PUT' ? bufferBody : null
-    // //         // }).promise();
+    public async shareSpreadsheet(sheetid: string, emailAddress: string, role: string, type: string = 'user'): Promise<SheetPermissionsResponse> {
+        try {
+            const serviceContract: GoogleDriveContract = Injector.get(GoogleDriveContract);
+            serviceContract.auth_mode = this.auth_mode;
+            serviceContract.jwt_client = this.jwt_client;
 
 
-    // //         const body: any = response.body;
-    // //         if (body) {
-    // //             const bodyObject: any = JSON.parse(body);
-    // //             return ({ result: response, body: bodyObject });
-    // //         } else {
-    // //             return true;
-    // //         }
-
-
-    // //     } catch (err) {
-    // //         const bodyObject: any = JSON.parse(err.error);
-    // //         if (bodyObject.error.code === 401) {
-    // //             throw (new Error("Invalid authorization key."));
-    // //         } else if (err.statusCode >= 400) {
-    // //             const message = bodyObject.error.message;
-    // //             throw (new Error("HTTP error " + bodyObject.error.code + " (" + http.STATUS_CODES[bodyObject.error.code]) + ") - " + message);
-    // //         } else if (err.statusCode === 200) {
-    // //             throw (new Error("Sheet is private. Use authentication or make public. (see https://github.com/theoephraim/node-google-spreadsheet#a-note-on-authentication for details)"));
-    // //         }
-    // //         throw (err);
-    // //     }
-    // // }
-
-
+            const response: MethodResult<SheetPermissionsResponse> = await serviceContract.addPermissions(sheetid, { type, role, emailAddress });
+            return response.result as SheetPermissionsResponse;
+        } catch (error) {
+            console.error(error);
+            throw (error);
+        }
+    }
 
     async getInfo(): Promise<SheetInfo> {
 

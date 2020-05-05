@@ -1,4 +1,5 @@
 import { SpreadsheetWorksheet } from "./SpreadsheetWorksheet";
+import { Dictionary } from "./functions";
 
 export class SheetInfo {
     constructor(data: SheetInfo) {
@@ -20,6 +21,18 @@ export class PagingInfo {
 export interface Credentials {
     client_email: string;
     private_key: string;
+}
+
+
+export interface SheetCreateResponse {
+    spreadsheetId: string;
+    properties: Dictionary
+}
+
+
+export interface SheetPermissionsResponse {
+    role: string;
+    type: string;
 }
 
 export type WebResponse = { result: any, body: any };

@@ -9,29 +9,37 @@
             "request": "launch",
             "name": "Launch Program",
             "console": "internalConsole",
-            "cwd":"${workspaceFolder}",
+            "cwd": "${workspaceFolder}",
             "outputCapture": "std",
             "env": {
-                "DEBUG":"methodus:*"
+                "DEBUG": "methodus:*"
             },
-            
-            "program": "${workspaceFolder}/lib/test/auth-test.js",
-           
+
+            "program": "${workspaceFolder}/lib/test/auth-test.js"
         },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Test spreadsheet Program",
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}",
+            "outputCapture": "std",
+            "env": {               
+                "DEBUG": "methodus:*"
+            },
+
+            "program": "${workspaceFolder}/lib/test/create.test.js"
+        },
+
         {
             "type": "node",
             "request": "launch",
             "name": "Jest",
             "console": "internalConsole",
             "outputCapture": "std",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": ["<node_internals>/**"],
             "program": "${workspaceFolder}\\node_modules\\jest\\bin\\jest",
-            "args":[
-
-            ]
-           
+            "args": []
         }
     ]
 }
