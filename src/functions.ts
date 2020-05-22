@@ -44,7 +44,7 @@ export function prepareObject(finalObject: { [key: string]: any } | any) {
 export function parseObjects(clone: Dictionary, key: string): void {
     try {
         if (clone[key]) {
-            if (clone[key].indexOf('[') === 0 || clone[key].indexOf('{') === 0) {
+            if (clone[key].indexOf('[') === 0 || clone[key].indexOf('{') === 0 || clone[key].indexOf('\'') === 0) {
                 clone[key] = JSON.parse(clone[key]);
             } else {
                 const numResult = Number(clone[key]);
