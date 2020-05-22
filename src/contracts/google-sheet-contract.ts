@@ -8,7 +8,7 @@ import { Dictionary } from '../functions';
 
 
 @Auth(AuthType.BearerToken, async function (_options: Dictionary) {
-    const caller: any = this as any;
+    const caller: any = this;
     if (caller.auth_mode === 'jwt') {
         if (!caller.google_auth || caller.google_auth.expires < +new Date()) {
             await caller.renewJwtAuth();

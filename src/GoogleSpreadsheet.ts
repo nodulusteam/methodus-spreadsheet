@@ -125,7 +125,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
             const response: MethodResult<SheetPermissionsResponse> = await serviceContract.addPermissions(sheetid, { type, role, emailAddress });
-            return response.result as SheetPermissionsResponse;
+            return response.result;
         } catch (error) {
             console.error(error);
             throw (error);

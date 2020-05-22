@@ -6,6 +6,11 @@ module.exports = {
   ],
 
   "collectCoverage": true,
+  "collectCoverageFrom":[
+    "<rootDir>/src/**/*",
+    "!<rootDir>/src/contracts/*",
+    "!<rootDir>/src/test/*"
+  ],
   "coverageReporters": ["json", "lcov", "text", "clover"],
   "coverageThreshold": {
     "global": {

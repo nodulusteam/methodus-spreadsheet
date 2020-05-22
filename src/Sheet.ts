@@ -86,7 +86,7 @@ export class Sheet {
     //     return reject(new Error(error.message));
     // }
 
-    public async insert<Model>(sheet: string, dataObject: Partial<Model>): Promise<Partial<Model>> {
+    public async insert<Model>(sheet: string, dataObject: Partial<Model>): Promise<Partial<Model> | null> {
         // Authenticate with the Google Spreadsheets API.
         await this.doc.useServiceAccountAuth(this.credentials!);
 
@@ -124,7 +124,7 @@ export class Sheet {
         this.sheets[sheet] = await this.doc.worksheets[sheet].getRows();
         this.loaded[sheet] = true;
         parseObject(insertedRow!.data);
-        return insertedRow!.data;
+        return insertedRow!== null ? insertedRow.data :  null;
     }
 
     public async insertMany<Model>(sheet: string, dataObject: Partial<Model>[]): Promise<Partial<Model>[]> {
