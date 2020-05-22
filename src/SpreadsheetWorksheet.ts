@@ -21,23 +21,23 @@ export class SpreadsheetWorksheet {
     }
 
     async getHeaderRow<Model>() {
-        return await this.spreadsheet.getHeaderRow<Model>(this.title);
+        return this.spreadsheet.getHeaderRow<Model>(this.title);
     }
 
     async getRows() {
-        return await this.spreadsheet.getRows(this.title);
+        return this.spreadsheet.getRows(this.title);
     }
 
 
     async updateRow<Model>(index: number, data: any, headerRow: any[]): Promise<SpreadsheetRow<Model>> {
-        return await this.spreadsheet.updateRow(this.data.sheetId, data, headerRow, index);
+        return this.spreadsheet.updateRow(this.data.sheetId, data, headerRow, index);
     }
 
     async addRow<Model>(data: Partial<Model>, headerRow: string[]) {
-        return await this.spreadsheet.addRow(this.data.sheetId, data, headerRow);
+        return this.spreadsheet.addRow(this.data.sheetId, data, headerRow);
     }
-    async addRows<Model>(data:  Partial<Model>[], headerRow: string[]) {
-        return await this.spreadsheet.addRows(this.data.sheetId, data, headerRow);
+    async addRows<Model>(data: Partial<Model>[], headerRow: string[]) {
+        return this.spreadsheet.addRows(this.data.sheetId, data, headerRow);
     }
 
 
