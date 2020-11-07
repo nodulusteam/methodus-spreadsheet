@@ -28,7 +28,11 @@ function createRow(): SheetModel {
 }
 const docs: { [key: string]: Sheet } = {};
 Object.keys(sheet_ids).forEach(function (key) {
-  docs[key] = new Sheet(sheet_ids[key], creds);
+  docs[key] = new Sheet(sheet_ids[key], creds, {
+    encrypt: true,
+    key: '3hbyX9RdTU786qB/w2QUr6LLH5QatEFHelszXfLu3ew=',
+    iv: 'XloOfyP9xwhS/8DsJdtSsw=='
+  });
 });
 
 
@@ -38,18 +42,17 @@ Object.keys(sheet_ids).forEach(function (key) {
 
 
   const arr: SheetModel[] = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 2; i++) {
     arr.push(createRow())
   }
-
-  const manyResults = await docs['private'].insertMany<SheetModel>('test', arr);
-  console.log('manyResults', manyResults);
+  // const manyResults = await docs['private'].insertMany<SheetModel>('test', arr);
+  // console.log('manyResults', manyResults);
   const newRow = createRow();
   let results = await docs['private'].insert('default', newRow);
   console.log('inserted', results);
 
   const queryResults = await docs['private'].query<SheetModel>('default', (row: SpreadsheetRow<SheetModel>) => {
-    return row.data['email'] === newRow.email
+    return row.data['keyid'] === results?.keyid
   });
   console.log('query', queryResults.data);
 
@@ -57,9 +60,9 @@ Object.keys(sheet_ids).forEach(function (key) {
   updatedObject.email = faker.internet.email();
   updatedObject.fields = [{ name: 'name1' }, { name: 'name2' }];
 
-  console.log('updatedObject', updatedObject);
-  results = await docs['private'].update<SheetModel>('default', updatedObject);
-  console.log('update', results);
+  // console.log('updatedObject', updatedObject);
+  // results = await docs['private'].update<SheetModel>('default', updatedObject);
+  // console.log('update', results);
 
   const queryResults2 = await docs['private'].query<SheetModel>('default');
   console.log('queryResults2', queryResults2);

@@ -1,13 +1,15 @@
-import { MethodConfig, Method, Param, Query, Auth, AuthType, MethodResult, Body } from '@methodus/server';
+
 import { Verbs } from '@methodus/platform-rest';
 import { SheetInfo, WebResponse, SheetCreateResponse } from '../interfaces';
 import { JWT } from 'google-auth-library';
 import { Dictionary } from '../functions';
+import { MethodResult,  Mapping, AuthType } from '@methodus/framework-commons';
+import decorators from '@methodus/framework-decorators';
 //const GoogleAuth = require('google-auth-library');
+ 
 
 
-
-@Auth(AuthType.BearerToken, async function (_options: Dictionary) {
+@decorators.Auth(AuthType.BearerToken, async function (_options: Dictionary) {
     const caller: any = this;
     if (caller.auth_mode === 'jwt') {
         if (!caller.google_auth || caller.google_auth.expires < +new Date()) {
@@ -24,40 +26,40 @@ import { Dictionary } from '../functions';
     }
     return '';
 })
-@MethodConfig('GoogleSheetContract')
+@decorators.MethodConfig('GoogleSheetContract')
 export class GoogleSheetContract {
 
     auth_mode: any;
 
-    @Method(Verbs.Get, '/:ss_key/values/:range')
-    async getRows(@Param('ss_key') _ss_key: string, @Param('range') _range: string, @Query() _query: any) {
+    @decorators.Method(Verbs.Get, '/:ss_key/values/:range')
+    async getRows(@Mapping.Param('ss_key') _ss_key: string, @Mapping.Param('range') _range: string, @Mapping.Query() _query: any) {
 
     }
 
-    @Method(Verbs.Get, '/:ss_key/values/:range')
-    async getHeaderRow(@Param('ss_key') _ss_key: string, @Param('range') _range: string): Promise<MethodResult<any>> {
+    @decorators.Method(Verbs.Get, '/:ss_key/values/:range')
+    async getHeaderRow(@Mapping.Param('ss_key') _ss_key: string, @Mapping.Param('range') _range: string): Promise<MethodResult<any>> {
 
         return new MethodResult<any>({});
     }
 
 
 
-    @Method(Verbs.Post, '/:ss_key:batchUpdate')
-    async batchUpdate(@Param('ss_key') _ss_key: string, @Body() _body: any): Promise<MethodResult<WebResponse>> {
+    @decorators.Method(Verbs.Post, '/:ss_key:batchUpdate')
+    async batchUpdate(@Mapping.Param('ss_key') _ss_key: string, @Mapping.Body() _body: any): Promise<MethodResult<WebResponse>> {
 
         return new MethodResult<any>({});
     }
 
 
-    @Method(Verbs.Get, '/:ss_key')
-    async getInfo(@Param('ss_key') _ss_key: string): Promise<MethodResult<SheetInfo>> {
+    @decorators.Method(Verbs.Get, '/:ss_key')
+    async getInfo(@Mapping.Param('ss_key') _ss_key: string): Promise<MethodResult<SheetInfo>> {
         const sheetInfo: SheetInfo = new SheetInfo({ title: 'contract', worksheets: [], id: 'xxxxx' });
         return new MethodResult<SheetInfo>(sheetInfo);
     }
 
 
-    @Method(Verbs.Post, '/')
-    async createSheet(@Body() _options: any): Promise<MethodResult<SheetCreateResponse>> {
+    @decorators.Method(Verbs.Post, '/')
+    async createSheet(@Mapping.Body() _options: any): Promise<MethodResult<SheetCreateResponse>> {
         return new MethodResult<SheetCreateResponse>({} as any);
     }
 

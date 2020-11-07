@@ -1,11 +1,12 @@
-import { MethodConfig, Method, Auth, AuthType, MethodResult, Mapping } from '@methodus/server';
+import {  AuthType, MethodResult, Mapping } from '@methodus/framework-commons';
+import decorators from '@methodus/framework-decorators';
 import { Verbs } from '@methodus/platform-rest';
 import { JWT } from 'google-auth-library';
 import { Dictionary } from '../functions';
 import { SheetPermissionsResponse } from '../interfaces';
 //const GoogleAuth = require('google-auth-library');
 
-@Auth(AuthType.BearerToken, async function (_options: Dictionary) {
+@decorators.Auth(AuthType.BearerToken, async function (_options: Dictionary) {
     const caller: any = this;
     if (caller.auth_mode === 'jwt') {
         if (!caller.google_auth || caller.google_auth.expires < +new Date()) {
@@ -22,16 +23,16 @@ import { SheetPermissionsResponse } from '../interfaces';
     }
     return '';
 })
-@MethodConfig('GoogleDriveContract')
+@decorators.MethodConfig('GoogleDriveContract')
 export class GoogleDriveContract {
     auth_mode: any;
-    @Method(Verbs.Get, '/about')
+    @decorators.Method(Verbs.Get, '/about')
     async getDriveInfo(@Mapping.Query('fields') fields: string = '*'): Promise<MethodResult> {
         return { fields } as any;
     }
 
 
-    @Method(Verbs.Post, '/files/:ss_key/permissions')
+    @decorators.Method(Verbs.Post, '/files/:ss_key/permissions')
     async addPermissions(@Mapping.Param('ss_key') _ss_key: string, @Mapping.Body() _options: Dictionary): Promise<MethodResult<SheetPermissionsResponse>> {
         return {} as any;
     }

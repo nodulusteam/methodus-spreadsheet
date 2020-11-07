@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import faker from 'faker';
 import { Sheet, getSheet, SheetDataResult } from '../Sheet';
 import { sheet_ids } from './config';
@@ -5,7 +6,7 @@ import creds from './service-account-creds';
 import { SpreadsheetRow } from '../SpreadsheetRow';
 import { WebResponse } from '../interfaces';
 
-
+const PRIVATE = 'private';
 const docs: { [key: string]: Sheet } = {};
 
 class SheetModel {
@@ -16,7 +17,6 @@ class SheetModel {
   some?: any;
   status?: string;
 }
-
 
 function createRow(): SheetModel {
 
@@ -30,10 +30,12 @@ function createRow(): SheetModel {
 
 }
 
-describe('Authentication', () => {
+describe('Sheet operations', () => {
+  jest.setTimeout(130 * 1000);
+  
   beforeAll(() => {
     Object.keys(sheet_ids).forEach(function (key) {
-      docs[key] = getSheet(sheet_ids[key], creds);
+      docs[key] = getSheet(sheet_ids[key], creds, { encrypt: false });
     });
   });
 
@@ -53,15 +55,12 @@ describe('Authentication', () => {
     });
   });
 
-
-
-
   describe('writing private doc', () => {
     let insertedRow: any = createRow();
     let updatedRow: Partial<SheetModel>;
     describe('insert', () => {
       test('into new Sheet', async () => {
-        const results = await docs['private'].insert<SheetModel>('test1', insertedRow);
+        const results = await docs[PRIVATE].insert<SheetModel>('test1', insertedRow);
         expect(results).toBeDefined();
         expect(results!.email).toBe(insertedRow.email);
         expect(results!.keyid).toBeDefined();
@@ -70,10 +69,10 @@ describe('Authentication', () => {
       });
 
       test('simple', async () => {
-        docs['private'].info = undefined;
+        docs[PRIVATE].info = undefined;
         const data = createRow();
 
-        const results = await docs['private'].insert<SheetModel>('test', data);
+        const results = await docs[PRIVATE].insert<SheetModel>('test', data);
         expect(results!.email).toBe(data.email);
         expect(results!.dateentered?.getTime()).toBeDefined();
         expect(results!.keyid).toBeDefined();
@@ -82,55 +81,52 @@ describe('Authentication', () => {
       });
 
       test('many', async () => {
-        docs['private'].info = undefined;
+        docs[PRIVATE].info = undefined;
         const arr: SheetModel[] = [];
         for (let i = 0; i < 10; i++) {
           arr.push(createRow())
         }
-        const results = await docs['private'].insertMany<SheetModel>('test', arr);
+        const results = await docs[PRIVATE].insertMany<SheetModel>('test', arr);
         expect(results[0].dateentered?.getTime()).toBeDefined();
         expect(results).toBeDefined();
         expect(results.length).toBe(10);
       });
 
       test('objects', async () => {
-        docs['private'].info = undefined;
+        docs[PRIVATE].info = undefined;
         const row = createRow();
         row.fields = [{ name: 'field1' }, { name: 'field2' }];
         row.some = undefined;
-        const results = await docs['private'].insert<SheetModel>('test', row);
+        const results = await docs[PRIVATE].insert<SheetModel>('test', row);
         insertedRow = results;
         expect(results).toBeDefined();
         expect(results!.keyid).toBeDefined();
       });
-
     });
 
     describe('update', () => {
 
       test('simple', async () => {
         insertedRow.email = faker.internet.email();
-        updatedRow = await docs['private'].update('test', insertedRow);
-        const results = await docs['private'].query('test');
+        updatedRow = await docs[PRIVATE].update('test', insertedRow);
+        const results = await docs[PRIVATE].query('test');
         expect(updatedRow.email).toBe(insertedRow.email);
         return results;
       });
 
       test('objects', async () => {
         const email2 = faker.internet.email();
-        updatedRow = await docs['private'].update('test', { keyid: insertedRow.keyid, email: email2, some: undefined, fields: [{ name: 'field1' }, { name: 'field2' }] });
-        const results = await docs['private'].query('test');
+        updatedRow = await docs[PRIVATE].update('test', { keyid: insertedRow.keyid, email: email2, some: undefined, fields: [{ name: 'field1' }, { name: 'field2' }] });
+        const results = await docs[PRIVATE].query('test');
         expect(updatedRow.email).toBe(email2);
         return results;
       });
 
-
-
       test('updateBy', async () => {
 
-        const updatedResults = await docs['private'].query<SheetModel>('test', (row: SpreadsheetRow<SheetModel>) => row.data.email === insertedRow.email);
+        const updatedResults = await docs[PRIVATE].query<SheetModel>('test', (row: SpreadsheetRow<SheetModel>) => row.data.email === insertedRow.email);
         const newEmail = faker.internet.email();
-        const results: SheetDataResult<SheetModel> = await docs['private'].updateBy<SheetModel>('test', { email: newEmail },
+        const results: SheetDataResult<SheetModel> = await docs[PRIVATE].updateBy<SheetModel>('test', { email: newEmail },
           (row: SpreadsheetRow<SheetModel>) => {
             return row.data['email'] === updatedRow.email;
           });
@@ -145,46 +141,35 @@ describe('Authentication', () => {
       });
     });
 
-
-
     describe('test sorting', () => {
       test('sort asc', async () => {
-        const all = await docs['private'].query<SheetModel>('test', undefined, true, 0, 100, [{ colId: 'email', direction: 'asc' }]);
+        const all = await docs[PRIVATE].query<SheetModel>('test', undefined, true, 0, 100, [{ colId: 'email', direction: 'asc' }]);
         expect(all).toBeDefined();
       });
       test('sort desc', async () => {
-        const all = await docs['private'].query<SheetModel>('test', undefined, true, 0, 100, [{ colId: 'email', direction: 'desc' }]);
+        const all = await docs[PRIVATE].query<SheetModel>('test', undefined, true, 0, 100, [{ colId: 'email', direction: 'desc' }]);
         expect(all).toBeDefined();
       });
     });
 
-
-
     test('remove from private doc', async () => {
-      const results = await docs['private'].delete<SheetModel>('test', insertedRow);
+      const results = await docs[PRIVATE].delete<SheetModel>('test', insertedRow);
       expect(results).toBeDefined();
     });
 
-
-
-
-
-
     test('deleteMany', async () => {
-      const all = await docs['private'].query<SheetModel>('test', undefined, true, 0, 100, [{ colId: 'keyid', direction: 'asc' }]);
-      const results = await docs['private'].deleteMany('test', all.data.map((row: any) => row.keyid));
+      const all = await docs[PRIVATE].query<SheetModel>('test', undefined, true, 0, 100, [{ colId: 'keyid', direction: 'asc' }]);
+      const results = await docs[PRIVATE].deleteMany('test', all.data.map((row: any) => row.keyid));
       expect(results).toBeDefined();
       expect(results.length).toBe(all.data.length);
     });
 
-
-
     test('removeWorksheet', async () => {
-      const info = docs['private'].info;
+      const info = docs[PRIVATE].info;
       if (info) {
         for (const worksheet of info.worksheets) {
           if (worksheet.title !== 'test') {
-            const removeResult: WebResponse = await docs['private'].doc.removeWorksheet(worksheet.id) as unknown as WebResponse;
+            const removeResult: WebResponse = await docs[PRIVATE].doc.removeWorksheet(worksheet.id) as unknown as WebResponse;
             expect(removeResult).toBeDefined();
           }
         }

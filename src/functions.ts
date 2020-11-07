@@ -28,7 +28,7 @@ export function prepareObject(finalObject: { [key: string]: any } | any) {
     Object.keys(finalObject).forEach((property) => {
         if (finalObject[property] !== undefined && finalObject[property] !== null) {
             if (typeof finalObject[property] === 'object' && !finalObject[property].getDate) {
-                finalObject[property] = JSON.stringify(finalObject[property]);
+                finalObject[property] =  JSON.stringify(finalObject[property]);
             } else if (finalObject[property].getDate) {
                 finalObject[property] = finalObject[property].toISOString();
             } else {

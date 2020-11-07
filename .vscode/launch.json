@@ -15,7 +15,7 @@
                 "DEBUG": "methodus:*"
             },
 
-            "program": "${workspaceFolder}/lib/test/auth-test.js"
+            "program": "${workspaceFolder}/dist/test/auth-test.js"
         },
         {
             "type": "node",
@@ -28,7 +28,7 @@
                 "DEBUG": "methodus:*"
             },
 
-            "program": "${workspaceFolder}/lib/test/create.test.js"
+            "program": "${workspaceFolder}/dist/test/create.test.js"
         },
 
         {

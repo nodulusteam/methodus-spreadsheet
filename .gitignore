@@ -2,6 +2,6 @@ node_modules/
 ignore/
 .env
 .DS_Store
-lib/
+dist/
 coverage/
 .scannerwork/

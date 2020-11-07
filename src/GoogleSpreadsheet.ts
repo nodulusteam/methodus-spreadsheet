@@ -7,28 +7,37 @@ import { SpreadsheetRow } from './SpreadsheetRow';
 import { SpreadsheetWorksheet } from './SpreadsheetWorksheet';
 import { EventEmitter } from 'events';
 import { Dictionary, parseObjects, prepareObject } from './functions';
-import { Injector, ClientConfiguration, ConfiguredServer, MethodResult } from '@methodus/server';
+import injection from '@methodus/framework-injection';
+import { MethodResult } from '@methodus/framework-commons';
+import decorators from '@methodus/framework-decorators';
+import { Http, ConfiguredClient, MethodHandler } from '@methodus/platform-rest';
+new MethodHandler();
+// import { Injector, ClientConfiguration, ConfiguredServer, MethodResult } from '@methodus/server';
 import { GoogleSheetContract } from './contracts/google-sheet-contract';
-import { Http } from '@methodus/platform-rest';
 import { Credentials, SheetInfo, ResponsePromise, SheetCreateResponse, SheetPermissionsResponse } from './interfaces';
 import { GoogleDriveContract } from './contracts/google-drive-contract';
+import { decrypt, encrypt } from './crypto';
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Z'];
-
-
 
 const GOOGLE_DRIVE_URL = "https://www.googleapis.com/drive/v3";
 const GOOGLE_SHEET_URL = "https://content-sheets.googleapis.com/v4/spreadsheets";
 const GOOGLE_AUTH_SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/drive.file"];
 
-
-@ClientConfiguration(GoogleSheetContract, Http, GOOGLE_SHEET_URL)
-@ClientConfiguration(GoogleDriveContract, Http, GOOGLE_DRIVE_URL)
-
-
-class SetupServer extends ConfiguredServer {
+const SPLITENC = "^:^";
+@decorators.ClientConfiguration(GoogleSheetContract, Http, GOOGLE_SHEET_URL)
+@decorators.ClientConfiguration(GoogleDriveContract, Http, GOOGLE_DRIVE_URL)
+class SetupServer extends ConfiguredClient {
 
 }
 new SetupServer();
+
+export interface SheetOptions {
+    encrypt?: boolean;
+    visibility?: boolean;
+    projection?: boolean;
+    key?: string;
+    iv?: string;
+}
 // const REQUIRE_AUTH_MESSAGE = 'You must authenticate to modify sheet data';
 
 // The main class that represents a single sheet
@@ -40,7 +49,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     auth_mode = 'anonymous';
     auth_client = new GoogleAuth();
     jwt_client?: JWT | UserRefreshClient;
-    options: any = {};
+    options?: SheetOptions;
 
     ss_key: any;
     //rows: any = [];
@@ -51,17 +60,31 @@ export class GoogleSpreadsheet extends EventEmitter {
     /**
      *
      */
-    constructor(ss_key: string, auth_id?: string, options?: any) {
+    constructor(ss_key: string, auth_id?: string, options?: SheetOptions) {
         super();
         this.ss_key = ss_key;
-
         this.auth_client = new GoogleAuth({ scopes: GOOGLE_AUTH_SCOPE });
         this.options = options || {};
         // auth_id may be null
         this.setAuthAndDependencies(auth_id);
     }
 
-
+    tryDecrypt(value: string) {
+        if (this.options?.encrypt && value.indexOf(SPLITENC) > 0) {
+            const parts = value.split(SPLITENC);
+            return decrypt({ encryptedData: parts[0], iv: parts[1] }, this.options?.key!);
+        } else {
+            return value;
+        }
+    }
+    tryEncrypt(value: string, fieldName?: string) {
+        if (this.options?.encrypt && fieldName !== 'keyid' && value && value.indexOf(SPLITENC) > 0) {
+            const encryptionResult = encrypt(value, this.options?.key!, this.options?.iv!);
+            return encryptionResult.encryptedData.toString() + SPLITENC + encryptionResult.iv.toString();
+        } else {
+            return value;
+        }
+    }
 
     // Authentication Methods
 
@@ -95,17 +118,17 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     setAuthAndDependencies(auth: any) {
         this.google_auth = auth;
-        if (!this.options.visibility) {
+        if (!this.options?.visibility) {
             this.visibility = this.google_auth ? 'private' : 'public';
         }
-        if (!this.options.projection) {
+        if (!this.options?.projection) {
             this.projection = this.google_auth ? 'full' : 'values';
         }
     }
 
     public async addSpreadsheet(title: string): Promise<SheetCreateResponse> {
         try {
-            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
             serviceContract.auth_mode = this.auth_mode;
             serviceContract.jwt_client = this.jwt_client;
             const response = await serviceContract.createSheet({ properties: { title: title } });
@@ -119,7 +142,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     public async shareSpreadsheet(sheetid: string, emailAddress: string, role: string, type: string = 'user'): Promise<SheetPermissionsResponse> {
         try {
-            const serviceContract: GoogleDriveContract = Injector.get(GoogleDriveContract);
+            const serviceContract: GoogleDriveContract = injection.Injector.get(GoogleDriveContract);
             serviceContract.auth_mode = this.auth_mode;
             serviceContract.jwt_client = this.jwt_client;
 
@@ -135,7 +158,7 @@ export class GoogleSpreadsheet extends EventEmitter {
     async getInfo(): Promise<SheetInfo> {
 
         try {
-            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
             serviceContract.auth_mode = this.auth_mode;
             serviceContract.jwt_client = this.jwt_client;
             const response: any = await serviceContract.getInfo(this.ss_key);
@@ -185,7 +208,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
 
         try {
-            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
             const response = await serviceContract.batchUpdate(this.ss_key, webRequest)
 
             // const data: WebResponse = await this.makeFeedRequest([`${this.ss_key}:batchUpdate`], 'POST', webRequest) as WebResponse;
@@ -231,7 +254,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             ]
         }
 
-        const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+        const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
 
         const response = await serviceContract.batchUpdate(this.ss_key, webRequest)
         if (response.result) {
@@ -255,7 +278,7 @@ export class GoogleSpreadsheet extends EventEmitter {
 
     async getHeaderRow<Model>(worksheet_id: string): Promise<SpreadsheetRow<Model>> {
 
-        const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+        const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
         const response = await serviceContract.getHeaderRow(this.ss_key, `${worksheet_id}!A1:Z1`)
         const entries = response.result.values;
         if (entries) {
@@ -273,7 +296,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         const rows: SpreadsheetRow<Model>[] = [];
         try {
             const worksheet_id = this.worksheets[worksheet_title] ? this.worksheets[worksheet_title].id : worksheet_title;
-            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract)
+            const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract)
             // const worksheetName = this.info.worksheets[worksheet_id].title;
             const response: any = await serviceContract.getRows(this.ss_key, `${worksheet_title}!A1:Z1000`, query);
             const data = response.result;
@@ -292,7 +315,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                     if (rowIndex > 0) {
                         const clone = JSON.parse(JSON.stringify(objectTemplate));
                         entries[0].forEach((key: string, index: number) => {
-                            clone[key] = row_data[index];
+                            clone[key] = this.tryDecrypt(row_data[index]);
                             parseObjects(clone, key);
                         });
                         rows.push(new SpreadsheetRow<Model>(this, clone, worksheet_id, rowIndex));
@@ -343,7 +366,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                             "values": headerRow.map((field: string) => {
                                 return {
                                     "userEnteredValue": {
-                                        "stringValue": (data as Dictionary)[field]
+                                        "stringValue": this.tryEncrypt((data as Dictionary)[field], field)
                                     }
                                 }
                             })
@@ -356,7 +379,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
             const response = await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('insert', { sheetId: worksheet_id });
             if (response.result) {
@@ -376,7 +399,6 @@ export class GoogleSpreadsheet extends EventEmitter {
 
 
     async addRows<Model>(worksheet_id: string, data: Partial<Model>[], headerRow: string[]): Promise<SpreadsheetRow<Model>> {
-
         const webRequest = {
             "requests": [
                 {
@@ -410,7 +432,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                                 "values": headerRow.map((field) => {
                                     return {
                                         "userEnteredValue": {
-                                            "stringValue": row[field]
+                                            "stringValue": this.tryEncrypt(row[field], field)
                                         }
                                     };
                                 })
@@ -424,7 +446,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
             await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('insert', { sheetId: worksheet_id });
             const row = new SpreadsheetRow<Model>(this, data, worksheet_id, 0);
@@ -482,7 +504,7 @@ export class GoogleSpreadsheet extends EventEmitter {
                             "values": headerRow.map((field: string) => {
                                 return {
                                     "userEnteredValue": {
-                                        "stringValue": (data as Dictionary)[field]
+                                        "stringValue": this.tryEncrypt((data as Dictionary)[field], field)
                                     }
                                 }
                             })
@@ -496,7 +518,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
         try {
 
-            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
             await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('update', { sheetId: worksheet_id });
             Object.keys(data).forEach((key: string) => {
@@ -542,7 +564,7 @@ export class GoogleSpreadsheet extends EventEmitter {
         }
         try {
 
-            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
             const response = await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('delete', { sheetId: worksheet_id });
             return response.result;
@@ -586,7 +608,7 @@ export class GoogleSpreadsheet extends EventEmitter {
             "responseIncludeGridData": false
         }
         try {
-            const serviceContract: GoogleSheetContract = Injector.get(GoogleSheetContract);
+            const serviceContract: GoogleSheetContract = injection.Injector.get(GoogleSheetContract);
             const response = await serviceContract.batchUpdate(this.ss_key, webRequest);
             this.emit('delete', { sheetId: worksheet_id });
             return response.result;

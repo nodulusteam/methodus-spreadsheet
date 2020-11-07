@@ -1,11 +1,12 @@
+import 'reflect-metadata';
 import creds from './service-account-creds';
 import { GoogleSpreadsheet } from '../GoogleSpreadsheet';
 
 
 
 describe('Test Spreadsheet creation', () => {
-  let sheetWorker;
-  let spreadsheetId;
+  let sheetWorker: GoogleSpreadsheet;
+  let spreadsheetId: string;
 
 
   beforeAll(async () => {
@@ -24,6 +25,7 @@ describe('Test Spreadsheet creation', () => {
   });
 
   test('should share the sheet with a user', async () => {
+    jest.setTimeout(1000 * 60);
     const shareResult = await sheetWorker.shareSpreadsheet(spreadsheetId, 'roi.benhaim@gmail.com', 'writer');
     expect(shareResult.type).toBe('user');
     expect(shareResult.role).toBe('writer');

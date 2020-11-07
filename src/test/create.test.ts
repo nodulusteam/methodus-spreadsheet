@@ -3,7 +3,7 @@ import { GoogleSpreadsheet } from '../GoogleSpreadsheet';
 
 
 (async () => {
-  const sheetWorker = new GoogleSpreadsheet('');
+  const sheetWorker = new GoogleSpreadsheet('',);
   sheetWorker.auth_mode = 'jwt';
 
   await sheetWorker.useServiceAccountAuth(creds);
